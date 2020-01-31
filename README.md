@@ -1,0 +1,2 @@
+# ottoPlan
+Reducing decision fatigue!
