@@ -35,6 +35,7 @@ export default class App extends React.Component {
       // Update state user object
       if (user) {
         this.setState({currentUser: user.providerData[0]});
+        // Check if user is in DB
       }
       else {
         this.setState({currentUser: null});
