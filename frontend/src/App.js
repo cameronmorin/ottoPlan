@@ -18,10 +18,13 @@ const uiConfig = {
 
 
 export default class App extends React.Component {
-  state = {
-    isAuthenticated: false,
-    currentUser: null
-  };
+  constructor(props) {
+    super(props);
+    this.state = {
+      isAuthenticated: false,
+      currentUser: null
+    };
+  }
 
   componentDidMount = () => {
     firebase.auth().onAuthStateChanged(user => {
@@ -37,7 +40,12 @@ export default class App extends React.Component {
         this.setState({currentUser: null});
       }
     });
-    console.log(this.state.currentUser);
+  }
+
+  componentDidUpdate = () => {
+    if (!this.state.isAuthenticated) {
+      console.log('Redirecting to sign in...');
+    }
   }
 
   render() {
