@@ -119,7 +119,25 @@ async function listCalendars(auth) {
         console.log(err.message);
     });
 
-  console.log(calendars_list);
+  var own_calendars = [];
+  for (var key in Object.keys(calendars_list)) {
+      if (calendars_list[key].accessRole == 'owner') {
+          own_calendars.push(calendars_list[key]);
+          //console.log(calendars_list[key].accessRole);
+      }
+      /*
+      if (key.hasOwnProperty(key)) {
+          console.log(key + " -> " + calendars_list[key]);
+      }
+      //console.log(cal.hasOwnProperty(key));
+
+      /*if (cal.accessRole == 'owner') {
+          console.log(cal);
+          //own_calendars.push(cal);
+      }*/
+  }
+
+  console.log(own_calendars);
 }
 
 
