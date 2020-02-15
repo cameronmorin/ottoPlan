@@ -3,7 +3,10 @@ const readline = require('readline');
 const {google} = require('googleapis');
 
 // If modifying these scopes, delete token.json.
-const SCOPES = ['https://www.googleapis.com/auth/calendar.readonly'];
+const SCOPES = [
+  'https://www.googleapis.com/auth/calendar.readonly',
+  'https://www.googleapis.com/auth/calendar'
+];
 // The file token.json stores the user's access and refresh tokens, and is
 // created automatically when the authorization flow completes for the first
 // time.
@@ -13,7 +16,8 @@ const TOKEN_PATH = 'token.json';
 fs.readFile('credentials.json', (err, content) => {
   if (err) return console.log('Error loading client secret file:', err);
   // Authorize a client with credentials, then call the Google Calendar API.
-  authorize(JSON.parse(content), listOwnEvents);
+  //authorize(JSON.parse(content), listOwnEvents);
+  authorize(JSON.parse(content), createEvent);
 });
 
 /**
@@ -112,8 +116,43 @@ async function listOwnEvents(auth) {
   }
 }
 
-/*
 function createEvent(auth) {
   const calendar = google.calendar({version: 'v3', auth});
-  calendar.events.
-*/
+  var event = {
+      summary: 'Test Event #3',
+      location: 'WCH 69',
+      description: 'where my notifications @ tho',
+      start: {
+          dateTime: '2020-02-17T20:00:00-05:00',
+          timeZone: 'America/Los_Angeles'
+      },
+      end: {
+          dateTime: '2020-02-17T20:00:00-09:00',
+          timeZone: 'America/Los_Angeles'
+      },
+      attendees: [{ email: 'ewong012@ucr.edu' }],
+      reminders: {
+          useDefault: false,
+          overrides: [
+              { method: 'email', minutes: 60 },
+              { method: 'popup', minutes: 10 }
+          ]
+      }
+  };
+
+  calendar.events.insert(
+      {
+          auth: auth,
+          calendarId: 'primary',
+          resource: event,
+          sendNotifications: true,
+      },
+      function(err, event) {
+          if (err) {
+              console.log('Error contacting Calendar: ' + err);
+              return;
+          }
+          console.log('Event created: %s', event.data.htmlLink);
+      }
+  );
+}
