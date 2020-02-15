@@ -13,8 +13,7 @@ const TOKEN_PATH = 'token.json';
 fs.readFile('credentials.json', (err, content) => {
   if (err) return console.log('Error loading client secret file:', err);
   // Authorize a client with credentials, then call the Google Calendar API.
-  authorize(JSON.parse(content), listEvents);
-  authorize(JSON.parse(content), listCalendars);
+  authorize(JSON.parse(content), listOwnEvents);
 });
 
 /**
@@ -70,44 +69,7 @@ function getAccessToken(oAuth2Client, callback) {
 * Lists the next 10 events on the user's primary calendar.
 * @param {google.auth.OAuth2} auth An authorized OAuth2 client.
 */
-function listEvents(auth) {
-  const calendar = google.calendar({version: 'v3', auth});
-  /*
-  calendar.calendarList.list()
-    .then(resp => {
-        //console.log(resp.data.items);
-        calendars_list = Object.assign({}, resp.data.items);
-        console.log(calendars_list = Object.assign({}, resp.data.items));
-    }).catch(err => {
-        console.log(err.message);
-    });
-
-  console.log(calendars_list);
-  */
-
-  calendar.events.list({
-    calendarId: 'primary',
-    timeMin: (new Date()).toISOString(),
-    maxResults: 10,
-    singleEvents: true,
-    orderBy: 'startTime',
-  }, (err, res) => {
-    if (err) return console.log('The API returned an error: ' + err);
-    const events = res.data.items;
-    if (events.length) {
-      console.log('Upcoming 10 events:');
-      events.map((event, i) => {
-        const start = event.start.dateTime || event.start.date;
-        console.log(`${start} - ${event.summary}`);
-      });
-    } else {
-      console.log('No upcoming events found.');
-    }
-  });
-}
-
-// Must be async/await in order to store returned object from Promise
-async function listCalendars(auth) {
+async function listOwnEvents(auth) {
   const calendar = google.calendar({version: 'v3', auth});
   var calendars_list = {};
   await calendar.calendarList.list()
@@ -123,23 +85,32 @@ async function listCalendars(auth) {
   for (var key in Object.keys(calendars_list)) {
       if (calendars_list[key].accessRole == 'owner') {
           own_calendars.push(calendars_list[key]);
-          //console.log(calendars_list[key].accessRole);
       }
-      /*
-      if (key.hasOwnProperty(key)) {
-          console.log(key + " -> " + calendars_list[key]);
-      }
-      //console.log(cal.hasOwnProperty(key));
-
-      /*if (cal.accessRole == 'owner') {
-          console.log(cal);
-          //own_calendars.push(cal);
-      }*/
   }
 
-  console.log(own_calendars);
+  for (var key in Object.keys(own_calendars)) {
+      calendar.events.list({
+        // replace 'primary' with 'ID'
+        calendarId: own_calendars[key].id,
+        timeMin: (new Date()).toISOString(),
+        maxResults: 10,
+        singleEvents: true,
+        orderBy: 'startTime',
+      }, (err, res) => {
+        if (err) return console.log('The API returned an error: ' + err);
+        const events = res.data.items;
+        if (events.length) {
+          console.log('Upcoming 10 events:');
+          events.map((event, i) => {
+            const start = event.start.dateTime || event.start.date;
+            console.log(`${start} - ${event.summary}`);
+          });
+        } else {
+          console.log('No upcoming events found.');
+        }
+      });
+  }
 }
-
 
 /*
 function createEvent(auth) {
