@@ -17,7 +17,7 @@ fs.readFile('credentials.json', (err, content) => {
   if (err) return console.log('Error loading client secret file:', err);
   // Authorize a client with credentials, then call the Google Calendar API.
   //authorize(JSON.parse(content), listOwnEvents);
-  authorize(JSON.parse(content), createEvent);
+  authorize(JSON.parse(content), listOwnEvents);
 });
 
 /**
@@ -38,6 +38,7 @@ function authorize(credentials, callback) {
     callback(oAuth2Client);
   });
 }
+
 /**
 * Get and store new token after prompting for user authorization, and then
 * execute the given callback with the authorized OAuth2 client.
@@ -69,12 +70,36 @@ function getAccessToken(oAuth2Client, callback) {
   });
 }
 
+function createCal(auth) {
+  const calendar = google.calendar({version: 'v3', auth});
+
+  calendar.calendars.insert({
+      auth: auth,
+      resource: {
+          summary: 'ottoPlan Meetings',
+          description: 'Meetings scheduled by ottoPlan',
+          // TODO: set timeZone to the same as 'primary' calendar
+          timeZone: calendar.calendars[primary].timeZone
+      }
+  }, function (err, resp) {
+      if (err) {
+          console.log(err);
+      } 
+      else {
+        console.log(resp);
+      }
+  })
+}
+
 /**
 * Lists the next 10 events on the user's primary calendar.
 * @param {google.auth.OAuth2} auth An authorized OAuth2 client.
 */
 async function listOwnEvents(auth) {
   const calendar = google.calendar({version: 'v3', auth});
+
+  await console.log(calendar.calendarList.list());
+    /*
   var calendars_list = {};
   await calendar.calendarList.list()
     .then(resp => {
@@ -97,7 +122,9 @@ async function listOwnEvents(auth) {
         // replace 'primary' with 'ID'
         calendarId: own_calendars[key].id,
         timeMin: (new Date()).toISOString(),
-        maxResults: 10,
+        // TODO: End of time window
+        // timeMax: (),
+        //maxResults: 10,
         singleEvents: true,
         orderBy: 'startTime',
       }, (err, res) => {
@@ -114,6 +141,7 @@ async function listOwnEvents(auth) {
         }
       });
   }
+  */
 }
 
 function createEvent(auth) {
