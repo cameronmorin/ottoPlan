@@ -14,6 +14,7 @@ fs.readFile('credentials.json', (err, content) => {
   if (err) return console.log('Error loading client secret file:', err);
   // Authorize a client with credentials, then call the Google Calendar API.
   authorize(JSON.parse(content), listEvents);
+  authorize(JSON.parse(content), listCalendars);
 });
 
 /**
@@ -71,9 +72,19 @@ function getAccessToken(oAuth2Client, callback) {
 */
 function listEvents(auth) {
   const calendar = google.calendar({version: 'v3', auth});
-    TODO: HERE
-  https://developers.google.com/calendar/v3/reference/calendarList/list#examples 
-  console.log(calendar.calendarList.list);
+  /*
+  calendar.calendarList.list()
+    .then(resp => {
+        //console.log(resp.data.items);
+        calendars_list = Object.assign({}, resp.data.items);
+        console.log(calendars_list = Object.assign({}, resp.data.items));
+    }).catch(err => {
+        console.log(err.message);
+    });
+
+  console.log(calendars_list);
+  */
+
   calendar.events.list({
     calendarId: 'primary',
     timeMin: (new Date()).toISOString(),
@@ -94,6 +105,23 @@ function listEvents(auth) {
     }
   });
 }
+
+// Must be async/await in order to store returned object from Promise
+async function listCalendars(auth) {
+  const calendar = google.calendar({version: 'v3', auth});
+  var calendars_list = {};
+  await calendar.calendarList.list()
+    .then(resp => {
+        //console.log(resp.data.items);
+        calendars_list = resp.data.items;
+        //console.log(calendars_list = Object.assign({}, resp.data.items));
+    }).catch(err => {
+        console.log(err.message);
+    });
+
+  console.log(calendars_list);
+}
+
 
 /*
 function createEvent(auth) {
