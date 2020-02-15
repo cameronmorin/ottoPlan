@@ -92,6 +92,7 @@ async function createCal(auth) {
       resource: {
           summary: 'ottoPlan Meetings',
           description: 'Meetings scheduled by ottoPlan',
+          // Set timeZone to same as primary calendar
           timeZone: time_zone
       }
   })
@@ -178,20 +179,33 @@ async function listOwnEvents(auth) {
 }
 
 function createEvent(auth, otto_cal_ID) {
+  var data_in = require('./test_in');
+  //console.log(data_in);
+
   const calendar = google.calendar({version: 'v3', auth});
   var event = {
-      summary: 'Test Event #3',
-      location: 'WCH 69',
-      description: 'where my notifications @ tho',
+      summary: data_in.event_info.summary,
+      location: data_in.event_info.location,
+      description: data_in.event_info.description,
       start: {
-          dateTime: '2020-02-19T20:00:00-05:00',
-          timeZone: 'America/Los_Angeles'
+          dateTime: data_in.scheduling_info.start.dateTime,
+          //dateTime: '2020-02-19T20:00:00-05:00',
+          //timeZone: 'America/Los_Angeles'
+          timeZone: data_in.scheduling_info.start.timeZone
       },
       end: {
-          dateTime: '2020-02-19T20:00:00-09:00',
-          timeZone: 'America/Los_Angeles'
+          dateTime: data_in.scheduling_info.end.dateTime,
+          //dateTime: '2020-02-19T20:00:00-09:00',
+          // timeZone: 'America/Los_Angeles'
+          timeZone: data_in.scheduling_info.end.timeZone
       },
-      attendees: [{ email: 'ewong012@ucr.edu' }],
+      attendees: data_in.event_info.attendees,
+      /*
+      [
+          { email: 'ewong012@ucr.edu'}, 
+          { email: 'padawongplays@gmail.com' }
+      ],
+      */
       reminders: {
           useDefault: false,
           overrides: [
