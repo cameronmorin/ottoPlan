@@ -70,25 +70,41 @@ function getAccessToken(oAuth2Client, callback) {
   });
 }
 
-function createCal(auth) {
+async function createCal(auth) {
   const calendar = google.calendar({version: 'v3', auth});
 
-  calendar.calendars.insert({
+  // Retrieve time zone of primary calendar to set for new calendar
+  var time_zone = '';
+  await calendar.calendars.get({
+      calendarId: 'primary'
+  })
+    .then(resp => {
+        //console.log(resp.data.timeZone);
+        time_zone = resp.data.timeZone;
+    }).catch(err => {
+        console.log(err.message);
+    });
+    
+  // Create new calendar
+  var new_id = '';
+  await calendar.calendars.insert({
       auth: auth,
       resource: {
           summary: 'ottoPlan Meetings',
           description: 'Meetings scheduled by ottoPlan',
-          // TODO: set timeZone to the same as 'primary' calendar
-          timeZone: calendar.calendars[primary].timeZone
-      }
-  }, function (err, resp) {
-      if (err) {
-          console.log(err);
-      } 
-      else {
-        console.log(resp);
+          timeZone: time_zone
       }
   })
+    .then(resp => {
+      console.log('Calendar created');
+      new_id = resp.data.id;
+    }).catch(err => {
+        console.log('Failed to create new calendar: ' + err.message);
+    });
+
+  // Return calendar ID
+  // console.log('New calendar ID: ' + new_id);
+  return new_id;
 }
 
 /**
@@ -98,25 +114,42 @@ function createCal(auth) {
 async function listOwnEvents(auth) {
   const calendar = google.calendar({version: 'v3', auth});
 
-  await console.log(calendar.calendarList.list());
-    /*
   var calendars_list = {};
   await calendar.calendarList.list()
     .then(resp => {
         //console.log(resp.data.items);
         calendars_list = resp.data.items;
-        //console.log(calendars_list = Object.assign({}, resp.data.items));
     }).catch(err => {
         console.log(err.message);
     });
 
+  // Create list of calendars owned by user
   var own_calendars = [];
+  var otto_cal_ID = '';
   for (var key in Object.keys(calendars_list)) {
       if (calendars_list[key].accessRole == 'owner') {
           own_calendars.push(calendars_list[key]);
       }
+      // Search for existing ottoPlan calendar
+      if (calendars_list[key].summary == 'ottoPlan Meetings') {
+          otto_cal_ID = calendars_list[key].id;
+      }
   }
 
+  console.log('otto_cal_ID: ' + otto_cal_ID ); 
+
+  // If no ottoPlan calendar, create one
+  if (otto_cal_ID == '') {
+      console.log('No ottoPlan calendar; creating new');
+      otto_cal_ID = await createCal(auth);
+  }
+  else {
+      console.log('Owned ottoPlan calendar exists');
+  }
+  createEvent(auth, otto_cal_ID);
+
+    /*
+  // List events in calendars owned by user
   for (var key in Object.keys(own_calendars)) {
       calendar.events.list({
         // replace 'primary' with 'ID'
@@ -144,18 +177,18 @@ async function listOwnEvents(auth) {
   */
 }
 
-function createEvent(auth) {
+function createEvent(auth, otto_cal_ID) {
   const calendar = google.calendar({version: 'v3', auth});
   var event = {
       summary: 'Test Event #3',
       location: 'WCH 69',
       description: 'where my notifications @ tho',
       start: {
-          dateTime: '2020-02-17T20:00:00-05:00',
+          dateTime: '2020-02-19T20:00:00-05:00',
           timeZone: 'America/Los_Angeles'
       },
       end: {
-          dateTime: '2020-02-17T20:00:00-09:00',
+          dateTime: '2020-02-19T20:00:00-09:00',
           timeZone: 'America/Los_Angeles'
       },
       attendees: [{ email: 'ewong012@ucr.edu' }],
@@ -171,7 +204,7 @@ function createEvent(auth) {
   calendar.events.insert(
       {
           auth: auth,
-          calendarId: 'primary',
+          calendarId: otto_cal_ID,
           resource: event,
           sendNotifications: true,
       },
