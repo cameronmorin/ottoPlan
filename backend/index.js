@@ -1,3 +1,16 @@
+const express = require('express');
+const app = express();
+
+const port = 5000;
+app.listen(port, () => console.log(`Server started on port ${port}`));
+
+// Send json file to frontend
+// TODO: move this to the appropriate place so that the necessary response info is sent back
+app.get('/api/schedule_event', (req, res) => {
+  var data_out = require('./test_in');
+  res.json(data_out);
+});
+
 const fs = require('fs');
 const readline = require('readline');
 const {google} = require('googleapis');
@@ -113,6 +126,7 @@ async function createCal(auth) {
 * @param {google.auth.OAuth2} auth An authorized OAuth2 client.
 */
 async function listOwnEvents(auth) {
+    /*
   const calendar = google.calendar({version: 'v3', auth});
 
   var calendars_list = {};
@@ -203,7 +217,7 @@ function createEvent(auth, otto_cal_ID) {
       /*
       [
           { email: 'ewong012@ucr.edu'}, 
-          { email: 'padawongplays@gmail.com' }
+          { email: 'armanddeforest@gmail.com' }
       ],
       */
       reminders: {

@@ -41,8 +41,14 @@ export default class App extends React.Component {
         this.setState({currentUser: null});
       }
     });
-  }
 
+    // TODO: Move this to the correct place to receive backend response to event schedule request
+    this.state = { schedule_event: {} }
+    fetch('/api/schedule_event')
+      .then(res => res.json())
+      .then(schedule_event => this.setState({schedule_event}, () => console.log('Schedule event response JSON received: ', schedule_event)));
+  }
+  
   componentDidUpdate = () => {
     if (!this.state.isAuthenticated) {
       console.log('Redirecting to sign in...');
