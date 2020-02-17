@@ -55,11 +55,11 @@ export default class App extends React.Component {
             },
             "scheduling_info": {
               "start": {
-                  "dateTime": "2020-02-19T20:00:00-05:00",
+                  "dateTime": "2020-02-16T20:00:00-05:00",
                   "timeZone": "America/Los_Angeles"
               },
               "end": {
-                  "dateTime": "2020-02-19T20:00:00-09:00",
+                  "dateTime": "2020-02-22T20:00:00-09:00",
                   "timeZone": "America/Los_Angeles"
               },
                 "event_duration": "",
@@ -71,6 +71,7 @@ export default class App extends React.Component {
             }
           }
         var data_out = Object.create(data_out);
+      /*
         this.state = { data_out }
 
         fetch('/schedule_event', {
@@ -90,6 +91,7 @@ export default class App extends React.Component {
     fetch('/schedule_event')
       .then(res => res.json())
       .then(schedule_event => this.setState({schedule_event}, () => console.log('Schedule event response JSON received: ', schedule_event)));
+    */
   }
   
   componentDidUpdate = () => {
@@ -115,9 +117,16 @@ export default class App extends React.Component {
         }
         <form id="Scheduling Info" method="POST" action="/schedule_event">
           <label for="summary">Event title:</label>
-          <input text="text" name="summary"/>
+          <input text="text" name="summary" value='Test Event'/>
           <label for="description">Event description:</label>
-          <input text="text" name="description"/>
+          <input text="text" name="description" value='This is a test event made within a form on the test site'/><br/><br/>
+          <label for="attendees">Attendee Info:</label>
+          <input text="text" name="email" value='ewong012@ucr.edu'/>
+          <input text="text" name="email" value='padawongplays@gmail.com'/><br/><br/>
+          <label for="start_time">Start of Time Window</label>
+          <input text="text" name="start_time" value="2020-02-16T20:00:00-05:00"/>
+          <label for="end_time">Start of Time Window</label>
+          <input text="text" name="end_time" value="2020-02-22T20:00:00-09:00"/>
           <input type="submit" value="submit" />
         </form>
         <Event />
