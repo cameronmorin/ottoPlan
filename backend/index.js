@@ -1,15 +1,30 @@
 const express = require('express');
 const app = express();
+const bodyParser = require('body-parser');
+var urlencodedParser = bodyParser.urlencoded({ extended: false});
 
 const port = 5000;
-app.listen(port, () => console.log(`Server started on port ${port}`));
 
 // Send json file to frontend
 // TODO: move this to the appropriate place so that the necessary response info is sent back
-app.get('/api/schedule_event', (req, res) => {
+app.post('/schedule_event', urlencodedParser, function(req, res) {
+    console.log('req.body from frontend: ' + JSON.stringify(req.body));
+
+    var data_out = require('./test_in');
+    res.json(data_out);
+});
+
+/*
+app.get('/schedule_event', (req, res) => {
+  var info_in = req.body;
+  console.log('req.body.success: ' + req.body);
+
   var data_out = require('./test_in');
   res.json(data_out);
 });
+*/
+
+app.listen(port, () => console.log(`Server started on port ${port}`));
 
 const fs = require('fs');
 const readline = require('readline');

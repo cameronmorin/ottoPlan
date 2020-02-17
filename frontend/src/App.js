@@ -1,6 +1,7 @@
 import React from 'react';
 import logo from './logo.svg';
 import './style/App.css';
+import Event from "./Event";
 
 import firebase from 'firebase';
 import firebaseConfig from './service/fconfig';
@@ -42,9 +43,51 @@ export default class App extends React.Component {
       }
     });
 
+        var data_out = {
+            "event_info": {
+                "summary": "Test Event from JSON",
+                "location": "ur mom",
+                "description": "Sending JSON from frontend to backend",
+                "attendees": [
+                    { "email": "ewong012@ucr.edu"},
+                    { "email": "armanddeforest@gmail.edu"}
+                ]
+            },
+            "scheduling_info": {
+              "start": {
+                  "dateTime": "2020-02-19T20:00:00-05:00",
+                  "timeZone": "America/Los_Angeles"
+              },
+              "end": {
+                  "dateTime": "2020-02-19T20:00:00-09:00",
+                  "timeZone": "America/Los_Angeles"
+              },
+                "event_duration": "",
+                "time_zone": "",
+                "start_date": "",
+                "end_date": "",
+                "start_time": "",
+                "end_time": ""
+            }
+          }
+        var data_out = Object.create(data_out);
+        this.state = { data_out }
+
+        fetch('/schedule_event', {
+            method: 'POST',
+            body: JSON.stringify(this.state),
+            headers: {"Content-Type": "application/json"}
+        })
+          .then(function(response){
+              return response.json()
+          }).then(function(body){
+              console.log('POST request response: ' + body);
+          });
+
+      
     // TODO: Move this to the correct place to receive backend response to event schedule request
     this.state = { schedule_event: {} }
-    fetch('/api/schedule_event')
+    fetch('/schedule_event')
       .then(res => res.json())
       .then(schedule_event => this.setState({schedule_event}, () => console.log('Schedule event response JSON received: ', schedule_event)));
   }
@@ -70,6 +113,14 @@ export default class App extends React.Component {
             firebaseAuth={firebase.auth()}
           />
         }
+        <form id="Scheduling Info" method="POST" action="/schedule_event">
+          <label for="summary">Event title:</label>
+          <input text="text" name="summary"/>
+          <label for="description">Event description:</label>
+          <input text="text" name="description"/>
+          <input type="submit" value="submit" />
+        </form>
+        <Event />
       </div>
     );
   }
