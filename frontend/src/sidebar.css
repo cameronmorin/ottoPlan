@@ -1,0 +1,31 @@
+.sidebar {
+    max-width: 300px;
+    position: absolute;
+    top: 75px;
+}
+
+.sidebar-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sidebar-item-stuff {
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.sidebar-item-icon {
+    margin-right: 10px;
+}
+
+.sidebar-subitem-text {
+    width: 100%;
+    font-size: calc(10px + 2vmin);
+}
+
+.expand-arrow {
+    font-size: 1.2rem !important;
+    margin-left: 10px;
+}
