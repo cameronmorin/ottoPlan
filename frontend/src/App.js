@@ -12,6 +12,9 @@ import SettingsIcon from '@material-ui/icons/Settings';
 import FriendIcon from '@material-ui/icons/People';
 import AccountIcon from '@material-ui/icons/AccountBox';
 import SignoutIcon from '@material-ui/icons/ExitToApp';
+import EventIcon from '@material-ui/icons/Event';
+import NotifIcon from '@material-ui/icons/Notifications';
+import UnreadIcon from '@material-ui/icons/NotificationImportant';
 
 const uiConfig = {
   signInFlow: 'popup',
@@ -26,17 +29,20 @@ const uiConfig = {
 const items = [
   { name: 'home', label: 'Home', Icon: HomeIcon},
   { name: 'friends', label: 'Friends', Icon: FriendIcon},
+  { name: 'create event', label: 'Create Event', Icon: EventIcon},
+  { name: 'notifications', label: 'Notifications', Icon: unread ? UnreadIcon : NotifIcon},
   { 
     name: 'settings', 
     label: 'Settings',
     Icon: SettingsIcon,
     items: [
              {name: 'account', label: 'Account', Icon: AccountIcon},
-             {name: 'signout', label: 'Sign Out', Icon: SignoutIcon},
+             {name: 'sign out', label: 'Sign Out', Icon: SignoutIcon},
            ],
   },
 ]
 
+var unread = false;
 
 export default class App extends React.Component {
   constructor(props) {
