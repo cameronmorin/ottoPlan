@@ -5,6 +5,7 @@ import './style/App.css';
 import firebase from 'firebase';
 import firebaseConfig from './service/fconfig';
 import StyledFirebaseAuth from 'react-firebaseui/StyledFirebaseAuth';
+import { GoogleLogin } from 'react-google-login';
 
 const uiConfig = {
   signInFlow: 'popup',
@@ -26,6 +27,10 @@ export default class App extends React.Component {
     };
   }
 
+  responseGoogle(response) {
+    console.log(response);
+  }
+
   componentDidMount = () => {
     firebase.auth().onAuthStateChanged(user => {
       this.setState({
@@ -36,6 +41,7 @@ export default class App extends React.Component {
       if (user) {
         this.setState({currentUser: user.providerData[0]});
         // Check if user is in DB
+        firebase.auth().currentUser.getIdToken(true).then(idToken => {console.log(idToken)});
       }
       else {
         this.setState({currentUser: null});
@@ -59,9 +65,16 @@ export default class App extends React.Component {
             <button onClick={() => firebase.auth().signOut()}>Sign Out!</button> 
           </>
           : 
-          <StyledFirebaseAuth
-            uiConfig={uiConfig}
-            firebaseAuth={firebase.auth()}
+          // <StyledFirebaseAuth
+          //   uiConfig={uiConfig}
+          //   firebaseAuth={firebase.auth()}
+          // />
+          <GoogleLogin
+            clientId="906450330766-17q3dmfg4dpd3v1gjoe5gkn395lpe5eg.apps.googleusercontent.com"
+            buttonText="Login"
+            onSuccess={this.responseGoogle}
+            onFailure={this.responseGoogle}
+            cookiePolicy={'single_host_origin'}
           />
         }
       </div>
