@@ -51,7 +51,7 @@ function getAccessToken(oAuth2Client, callback) {
     access_type: 'offline',
     scope: SCOPES,
   });
-  console.log('Authorize this app by visiting this url:', authUrl);
+  console.log('Authorize this app by visiting this url:', authUrl, '\n');
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
@@ -64,28 +64,28 @@ function getAccessToken(oAuth2Client, callback) {
       // Store the token to disk for later program executions
       fs.writeFile(TOKEN_PATH, JSON.stringify(token), (err) => {
         if (err) return console.error(err);
-        console.log('Token stored to', TOKEN_PATH);
+        console.log('Token stored to', TOKEN_PATH, '\n');
       });
       return callback(oAuth2Client);
     });
   });
 }
 
-app.listen(port, () => console.log(`Server started on port ${port}`));
+app.listen(port, () => console.log(`Server started on port ${port}\n`));
 
 // Receive JSON scheduling request info from frontend
 // Send back JSON scheduling response to frontend
 // TODO: move this to the appropriate place so that the necessary response info is sent back
 app.post('/schedule_event', urlencodedParser, function(req, res) {
-    console.log('req.body from frontend: ' + JSON.stringify(req.body));
-    console.log('req.body type: ' + typeof req.body);
+    console.log('req.body from frontend: ' + JSON.stringify(req.body), '\n');
+    console.log('req.body type: ' + typeof req.body, '\n');
     var request_data = req.body;
-    console.log('request_data from frontend: ' + JSON.stringify(request_data));
+    console.log('request_data from frontend: ' + JSON.stringify(request_data), '\n');
     var returned = {};
 
     // Load client secrets from a local file.
     fs.readFile('credentials.json', (err, content) => {
-      if (err) return console.log('Error loading client secret file:', err);
+      if (err) return console.log('Error loading client secret file:', err, '\n');
       // Authorize a client with credentials, then call the Google Calendar API.
         
       // Need to call API-accessing function from here
@@ -93,7 +93,7 @@ app.post('/schedule_event', urlencodedParser, function(req, res) {
       returned = authorize(JSON.parse(content), scheduleEvent, request_data);
     });
 
-    console.log('returned: ' + returned);
+    console.log('returned: ' + returned, '\n');
 
     var data_out = require('./test_in');
     data_out.event_info.summary = req.body.summary;
@@ -103,7 +103,7 @@ app.post('/schedule_event', urlencodedParser, function(req, res) {
 /*
 app.get('/schedule_event', (req, res) => {
   var info_in = req.body;
-  console.log('req.body.success: ' + req.body);
+  console.log('req.body.success: ' + req.body, '\n');
 
   var data_out = require('./test_in');
   res.json(data_out);
@@ -111,17 +111,20 @@ app.get('/schedule_event', (req, res) => {
 */
 
 async function scheduleEvent(auth, request_data) {
-    console.log('request_data: ' + JSON.stringify(request_data));
-    console.log('request_data.start_time: ' + request_data.start_time);
+    console.log('request_data: ' + JSON.stringify(request_data), '\n');
+    console.log('request_data.start_time: ' + request_data.start_time, '\n');
 
-    var own_calendars = getOwnEvents(auth);
-    console.log('own_calendars: ' + JSON.stringify(own_calendars));
+    return await getOwnEvents(auth, request_data);
+    /*
+
+    console.log('own_calendars: ' + JSON.stringify(own_calendars), '\n');
     var otto_cal_ID = getOttoCal(auth, own_calendars);
     listOwnEvents(auth, own_calendars, request_data);
 
     var msg = "Temporary message";
 
     return msg;
+    */
 }
 
 /* Adapted from Google Calendar API's Node.js Quickstart
@@ -129,7 +132,9 @@ async function scheduleEvent(auth, request_data) {
 * Fetches and returns list of calendars owned by user
 * If no ottoPlan Meetings calendar, creates one
 */
-async function getOwnEvents(auth) {
+// Receives request_data to pass on to next function called
+// Only way I can think to do it because of async/await
+async function getOwnEvents(auth, request_data) {
   const calendar = google.calendar({version: 'v3', auth});
 
   var calendars_list = {};
@@ -150,15 +155,15 @@ async function getOwnEvents(auth) {
               }
           }
           //console.log('within getOwnEvents, own_calendars: ' + JSON.stringify(own_calendars));
-
-
-          return own_calendars;
+          
+          return listOwnEvents(auth, own_calendars, otto_cal_ID, request_data);
     }).catch(err => {
-        console.log(err.message);
+        console.log(err.message, '\n');
     });
 
 }
 
+/* No longer needed at this time; handled in getOwnEvents
 async function getOttoCal(auth, own_calendars) {
 
   var otto_cal_ID = '';
@@ -171,118 +176,119 @@ async function getOttoCal(auth, own_calendars) {
 
   // If no ottoPlan calendar, create one
   if (otto_cal_ID == '') {
-      console.log('No ottoPlan calendar; creating new');
+      console.log('No ottoPlan calendar; creating new\n');
       otto_cal_ID = await createCal(auth);
   }
   else {
-      console.log('Owned ottoPlan calendar exists');
+      console.log('Owned ottoPlan calendar exists\n');
   }
   //createEvent(auth, otto_cal_ID);
 
   return otto_cal_ID;
-}
+}*/
 
 
-function listOwnEvents(auth, own_calendars, request_data) {
+// Creates list of owned events using start/end time in request_data
+// Calls createEvent to schedule the event
+async function listOwnEvents(auth, own_calendars, otto_cal_ID, request_data) {
   const calendar = google.calendar({version: 'v3', auth});
-
-  console.log('listOwnEvents beginning...');
     
-  // List events in calendars owned by user
+  // If no ottoPlan calendar, create one
+  if (otto_cal_ID == '') {
+      otto_cal_ID = await createCal(auth)
+  }
+
+
+  console.log('listOwnEvents begin...\n');
+  //console.log('request_data: ' + JSON.stringify(request_data), '\n');
+
+  var i = 0;
   for (var key in Object.keys(own_calendars)) {
-      calendar.events.list({
-        // replace 'primary' with 'ID'
-        calendarId: own_calendars[key].id,
+  // iterating numerically to call a function after last iteration, thereby bypassing await/async issue
+  //for (i = 0; i < Object.keys(own_calendars).length; i++){
+      console.log('(in loop) Calendar: ' + JSON.stringify(own_calendars[i].id), '\n');
+
+      await calendar.events.list({
+        calendarId: own_calendars[i].id,
         //timeMin: (new Date()).toISOString(),
-        timeMin: request_data.scheduling_info.start.dateTime,
+        //TODO: after getting form to send the correct JSON, update these
+        //timeMin: request_data.scheduling_info.start.dateTime,
+        timeMin: request_data.start_time,
         // TODO: End of time window
-        timeMax: request_data.scheduling_info.end.dateTime,
+        //timeMax: request_data.scheduling_info.end.dateTime,
+        timeMax: request_data.end_time,
         //maxResults: 10,
         singleEvents: true,
         orderBy: 'startTime',
+
+        // TODO: add relevant events to a list to cross-reference
       }, (err, res) => {
-        if (err) return console.log('The API returned an error: ' + err);
+        console.log('i = ' + i + '; Object.keys(own_calendars).length = ' + Object.keys(own_calendars).length, '\n');
+        if (err) return console.log('The API returned an error: ' + err, '\n');
         const events = res.data.items;
+
+        //console.log('Calendar: ' + JSON.stringify(own_calendars[i].id), '\n');
+
         if (events.length) {
-          console.log('Upcoming events betweeen ' + request_data.scheduling_info.start.dateTime + ' and ' + request_data.scheduling_info.end.dateTime + ':');
+          //console.log('Upcoming events betweeen ' + request_data.scheduling_info.start.dateTime + ' and ' + request_data.scheduling_info.end.dateTime + ':');
+          console.log('Upcoming events betweeen ' + request_data.start_time + ' and ' + request_data.end_time + ':');
           events.map((event, i) => {
             const start = event.start.dateTime || event.start.date;
-            console.log(`${start} - ${event.summary}`);
+            console.log(`${start} - ${event.summary}\n`);
           });
         } else {
-          console.log('No upcoming events found.');
+          console.log('No upcoming events found.\n');
+        }
+
+        i++;
+        // Call next function when all calendars iterated through
+        if (i == Object.keys(own_calendars).length) {
+          console.log('Calling createEvent...\n');
+          return createEvent(auth, otto_cal_ID, request_data);
         }
       });
   }
-  console.log('listOwnEvents concluded');
-}
-
-async function createCal(auth) {
-  const calendar = google.calendar({version: 'v3', auth});
-
-  // Retrieve time zone of primary calendar to set for new calendar
-  var time_zone = '';
-  await calendar.calendars.get({
-      calendarId: 'primary'
-  })
-    .then(resp => {
-        //console.log(resp.data.timeZone);
-        time_zone = resp.data.timeZone;
-    }).catch(err => {
-        console.log(err.message);
-    });
     
-  // Create new calendar
-  var new_id = '';
-  await calendar.calendars.insert({
-      auth: auth,
-      resource: {
-          summary: 'ottoPlan Meetings',
-          description: 'Meetings scheduled by ottoPlan',
-          // Set timeZone to same as primary calendar
-          timeZone: time_zone
-      }
-  })
-    .then(resp => {
-      console.log('Calendar created');
-      new_id = resp.data.id;
-    }).catch(err => {
-        console.log('Failed to create new calendar: ' + err.message);
-    });
+  // Add info for time to schedule the event
+  //request_data[eventStart] = 
+  //request_data[eventEnd] = 
 
-  // Return calendar ID
-  // console.log('New calendar ID: ' + new_id);
-  return new_id;
 }
 
-function createEvent(auth, otto_cal_ID) {
-  var data_in = require('./test_in');
-  //console.log(data_in);
+function createEvent(auth, otto_cal_ID, request_data) {
+  //var data_in = require('./test_in');
+  //console.log(data_in, '\n');
+  console.log('createEvent beginning...\n');
+  console.log('otto_cal_ID: ' + otto_cal_ID, '\n');
 
   const calendar = google.calendar({version: 'v3', auth});
   var event = {
-      summary: data_in.event_info.summary,
-      location: data_in.event_info.location,
-      description: data_in.event_info.description,
+      // TODO: Update the rhs of these when form sends correct JSON
+      //summary: request_data.event_info.summary,
+      summary: request_data.summary,
+      //location: request_data.event_info.location,
+      location: request_data.location,
+      //description: request_data.event_info.description,
+      description: request_data.description,
       start: {
-          dateTime: data_in.scheduling_info.start.dateTime,
+          //dateTime: request_data.scheduling_info.start.dateTime,
+          dateTime: request_data.start_time,
           //dateTime: '2020-02-19T20:00:00-05:00',
-          //timeZone: 'America/Los_Angeles'
-          timeZone: data_in.scheduling_info.start.timeZone
+          timeZone: 'America/Los_Angeles'
+          //timeZone: request_data.scheduling_info.start.timeZone
       },
       end: {
-          dateTime: data_in.scheduling_info.end.dateTime,
+          dateTime: request_data.end_time,
           //dateTime: '2020-02-19T20:00:00-09:00',
-          // timeZone: 'America/Los_Angeles'
-          timeZone: data_in.scheduling_info.end.timeZone
+          timeZone: 'America/Los_Angeles'
+          // timeZone: request_data.scheduling_info.end.timeZone
       },
-      attendees: data_in.event_info.attendees,
-      /*
-      [
+      // Importing emails from request_data isn't working right now because it's coming in as a list of email addresses, but we need it as an object in the format below
+      //attendees: request_data.email,
+      attendees: [
           { email: 'ewong012@ucr.edu'}, 
-          { email: 'armanddeforest@gmail.com' }
+          { email: 'erin.wong002@email.ucr.edu' }
       ],
-      */
       reminders: {
           useDefault: false,
           overrides: [
@@ -301,10 +307,58 @@ function createEvent(auth, otto_cal_ID) {
       },
       function(err, event) {
           if (err) {
-              console.log('Error contacting Calendar: ' + err);
-              return;
+              console.log('Error creating Calendar event: ' + err, '\n');
+              console.log('event: ' + event, '\n');
+              event.success = "false";
+              event.msg = err;
+              console.log('createEvent returning failure...\n');
+              return event;
           }
-          console.log('Event created: %s', event.data.htmlLink);
+          console.log('Event created: %s', event.data.htmlLink, '\n');
+
+          event.success = "true";
+          console.log('event: ' + event, '\n');
+
+          console.log('createEvent returning success...\n');
+          return event;
       }
   );
+}
+
+async function createCal(auth) {
+  const calendar = google.calendar({version: 'v3', auth});
+
+  // Retrieve time zone of primary calendar to set for new calendar
+  var time_zone = '';
+  await calendar.calendars.get({
+      calendarId: 'primary'
+  })
+    .then(resp => {
+        //console.log(resp.data.timeZone, '\n');
+        time_zone = resp.data.timeZone;
+    }).catch(err => {
+        console.log(err.message, '\n');
+    });
+    
+  // Create new calendar
+  var new_id = '';
+  await calendar.calendars.insert({
+      auth: auth,
+      resource: {
+          summary: 'ottoPlan Meetings',
+          description: 'Meetings scheduled by ottoPlan',
+          // Set timeZone to same as primary calendar
+          timeZone: time_zone
+      }
+  })
+    .then(resp => {
+      console.log('Calendar created', '\n');
+      new_id = resp.data.id;
+    }).catch(err => {
+        console.log('Failed to create new calendar: ' + err.message, '\n');
+    });
+
+  // Return calendar ID
+  // console.log('New calendar ID: ' + new_id, '\n');
+  return new_id;
 }

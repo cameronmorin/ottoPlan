@@ -50,7 +50,7 @@ export default class App extends React.Component {
                 "description": "Sending JSON from frontend to backend",
                 "attendees": [
                     { "email": "ewong012@ucr.edu"},
-                    { "email": "armanddeforest@gmail.edu"}
+                    { "email": "padawongplays@gmail.edu"}
                 ]
             },
             "scheduling_info": {
@@ -70,7 +70,6 @@ export default class App extends React.Component {
                 "end_time": ""
             }
           }
-        var data_out = Object.create(data_out);
       /*
         this.state = { data_out }
 
@@ -116,16 +115,16 @@ export default class App extends React.Component {
           />
         }
         <form id="Scheduling Info" method="POST" action="/schedule_event">
-          <label for="summary">Event title:</label>
+          <label htmlFor="summary">Event title:</label>
           <input text="text" name="summary" value='Test Event'/>
-          <label for="description">Event description:</label>
+          <label htmlFor="description">Event description:</label>
           <input text="text" name="description" value='This is a test event made within a form on the test site'/><br/><br/>
-          <label for="attendees">Attendee Info:</label>
+          <label htmlFor="attendees">Attendee Info:</label>
           <input text="text" name="email" value='ewong012@ucr.edu'/>
-          <input text="text" name="email" value='padawongplays@gmail.com'/><br/><br/>
-          <label for="start_time">Start of Time Window</label>
+          <input text="text" name="email" value=''/><br/><br/>
+          <label htmlFor="start_time">Start of Time Window</label>
           <input text="text" name="start_time" value="2020-02-16T20:00:00-05:00"/>
-          <label for="end_time">Start of Time Window</label>
+          <label htmlFor="end_time">Start of Time Window</label>
           <input text="text" name="end_time" value="2020-02-22T20:00:00-09:00"/>
           <input type="submit" value="submit" />
         </form>
