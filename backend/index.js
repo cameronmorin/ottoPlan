@@ -100,7 +100,7 @@ app.post('/schedule_event', urlencodedParser, function(req, res) {
     res.json(data_out);
 });
 
-/*
+/* TODO: remove
 app.get('/schedule_event', (req, res) => {
   var info_in = req.body;
   console.log('req.body.success: ' + req.body, '\n');
@@ -110,6 +110,9 @@ app.get('/schedule_event', (req, res) => {
 });
 */
 
+/* #1 in the async function daisy chain
+ * Calls getOwnEvents which returns a JSON of the user's own events
+ */
 async function scheduleEvent(auth, request_data) {
     console.log('request_data: ' + JSON.stringify(request_data), '\n');
     console.log('request_data.start_time: ' + request_data.start_time, '\n');
@@ -149,10 +152,12 @@ async function getOwnEvents(auth, request_data) {
               if (calendars_list[key].accessRole == 'owner') {
                   own_calendars.push(calendars_list[key]);
               }
+              /* Deprecated; no longer using ottoPlan calendar to reduce permissions
               // Search for existing ottoPlan calendar
               if (calendars_list[key].summary == 'ottoPlan Meetings') {
                   otto_cal_ID = calendars_list[key].id;
               }
+              */
           }
           //console.log('within getOwnEvents, own_calendars: ' + JSON.stringify(own_calendars));
           
@@ -193,23 +198,26 @@ async function getOttoCal(auth, own_calendars) {
 async function listOwnEvents(auth, own_calendars, otto_cal_ID, request_data) {
   const calendar = google.calendar({version: 'v3', auth});
     
+  /* Deprecated; no longer creating/using ottoPlan calendar to reduce permissions
   // If no ottoPlan calendar, create one
   if (otto_cal_ID == '') {
       otto_cal_ID = await createCal(auth)
   }
-
+  */
 
   console.log('listOwnEvents begin...\n');
   //console.log('request_data: ' + JSON.stringify(request_data), '\n');
 
+  // Honestly, I don't understand why 'i' makes everything work, but it does.
+  // I tried replacing it with 'key', but that made everything blow up
   var i = 0;
   for (var key in Object.keys(own_calendars)) {
   // iterating numerically to call a function after last iteration, thereby bypassing await/async issue
   //for (i = 0; i < Object.keys(own_calendars).length; i++){
-      console.log('(in loop) Calendar: ' + JSON.stringify(own_calendars[i].id), '\n');
+      console.log('(in loop) Calendar: ' + JSON.stringify(own_calendars[key].id), '\n');
 
-      await calendar.events.list({
-        calendarId: own_calendars[i].id,
+      calendar.events.list({
+        calendarId: own_calendars[key].id,
         //timeMin: (new Date()).toISOString(),
         //TODO: after getting form to send the correct JSON, update these
         //timeMin: request_data.scheduling_info.start.dateTime,
@@ -223,7 +231,7 @@ async function listOwnEvents(auth, own_calendars, otto_cal_ID, request_data) {
 
         // TODO: add relevant events to a list to cross-reference
       }, (err, res) => {
-        console.log('i = ' + i + '; Object.keys(own_calendars).length = ' + Object.keys(own_calendars).length, '\n');
+        //console.log('i = ' + i + '; Object.keys(own_calendars).length = ' + Object.keys(own_calendars).length, '\n');
         if (err) return console.log('The API returned an error: ' + err, '\n');
         const events = res.data.items;
 
@@ -232,7 +240,7 @@ async function listOwnEvents(auth, own_calendars, otto_cal_ID, request_data) {
         if (events.length) {
           //console.log('Upcoming events betweeen ' + request_data.scheduling_info.start.dateTime + ' and ' + request_data.scheduling_info.end.dateTime + ':');
           console.log('Upcoming events betweeen ' + request_data.start_time + ' and ' + request_data.end_time + ':');
-          events.map((event, i) => {
+          events.map((event, key) => {
             const start = event.start.dateTime || event.start.date;
             console.log(`${start} - ${event.summary}\n`);
           });
@@ -244,7 +252,12 @@ async function listOwnEvents(auth, own_calendars, otto_cal_ID, request_data) {
         // Call next function when all calendars iterated through
         if (i == Object.keys(own_calendars).length) {
           console.log('Calling createEvent...\n');
-          return createEvent(auth, otto_cal_ID, request_data);
+          createEvent(auth, request_data).then(function(event) {
+              console.log('listOwnEvents event: ' + JSON.stringify(event));
+              return event;
+          });
+          //var event = createEvent(auth, request_data);
+          //return createEvent(auth, request_data);
         }
       });
   }
@@ -255,11 +268,11 @@ async function listOwnEvents(auth, own_calendars, otto_cal_ID, request_data) {
 
 }
 
-function createEvent(auth, otto_cal_ID, request_data) {
+async function createEvent(auth, request_data) {
   //var data_in = require('./test_in');
   //console.log(data_in, '\n');
   console.log('createEvent beginning...\n');
-  console.log('otto_cal_ID: ' + otto_cal_ID, '\n');
+  //console.log('otto_cal_ID: ' + otto_cal_ID, '\n');
 
   const calendar = google.calendar({version: 'v3', auth});
   var event = {
@@ -298,10 +311,11 @@ function createEvent(auth, otto_cal_ID, request_data) {
       }
   };
 
-  calendar.events.insert(
+  await calendar.events.insert(
       {
           auth: auth,
-          calendarId: otto_cal_ID,
+          //calendarId: otto_cal_ID,
+          calendarId: 'primary',
           resource: event,
           sendNotifications: true,
       },
@@ -317,7 +331,7 @@ function createEvent(auth, otto_cal_ID, request_data) {
           console.log('Event created: %s', event.data.htmlLink, '\n');
 
           event.success = "true";
-          console.log('event: ' + event, '\n');
+          console.log('createEvent event: ' + JSON.stringify(event), '\n');
 
           console.log('createEvent returning success...\n');
           return event;
