@@ -10,12 +10,23 @@ import { GoogleLogin } from 'react-google-login';
 const uiConfig = {
   signInFlow: 'popup',
   signInOptions: [
-    firebase.auth.GoogleAuthProvider.PROVIDER_ID
+    {
+      provider: firebase.auth.GoogleAuthProvider.PROVIDER_ID,
+      scopes: [
+        'https://www.googleapis.com/auth/calendar',
+        'https://www.googleapis.com/auth/calendar.events',
+        'https://www.googleapis.com/auth/calendar.readonly'
+      ]
+    }
   ],
   callbacks: {
     signInSuccess: () => false
   }
 };
+
+const responseGoogle = (response) => {
+  console.log(response);
+}
 
 
 export default class App extends React.Component {
@@ -25,10 +36,6 @@ export default class App extends React.Component {
       isAuthenticated: false,
       currentUser: null
     };
-  }
-
-  responseGoogle(response) {
-    console.log(response);
   }
 
   componentDidMount = () => {
@@ -41,7 +48,7 @@ export default class App extends React.Component {
       if (user) {
         this.setState({currentUser: user.providerData[0]});
         // Check if user is in DB
-        firebase.auth().currentUser.getIdToken(true).then(idToken => {console.log(idToken)});
+        // firebase.auth().currentUser.getIdToken(true).then(idToken => {console.log(idToken)});
       }
       else {
         this.setState({currentUser: null});
@@ -53,6 +60,20 @@ export default class App extends React.Component {
     if (!this.state.isAuthenticated) {
       console.log('Redirecting to sign in...');
     }
+  }
+
+  popupSignIn = () => {
+    var GoogleProvider = new firebase.auth.GoogleAuthProvider;
+    GoogleProvider.addScope('https://www.googleapis.com/auth/calendar');
+    GoogleProvider.addScope('https://www.googleapis.com/auth/calendar.events');
+    GoogleProvider.addScope('https://www.googleapis.com/auth/calendar.readonly');
+    firebase.auth().signInWithPopup(GoogleProvider).then(result => {
+      console.log('Succes!');
+      console.log(result.credential.accessToken);
+    }).catch(error => {
+      console.log('Error signing in.');
+      console.log(error);
+    });
   }
 
   render() {
@@ -69,13 +90,16 @@ export default class App extends React.Component {
           //   uiConfig={uiConfig}
           //   firebaseAuth={firebase.auth()}
           // />
-          <GoogleLogin
-            clientId="906450330766-17q3dmfg4dpd3v1gjoe5gkn395lpe5eg.apps.googleusercontent.com"
-            buttonText="Login"
-            onSuccess={this.responseGoogle}
-            onFailure={this.responseGoogle}
-            cookiePolicy={'single_host_origin'}
-          />
+
+          <button onClick={this.popupSignIn}>Login Test</button>
+
+          // <GoogleLogin
+          //   clientId="647293554034-efae43k2ivikha1p20rbljeterl7mf7v.apps.googleusercontent.com"
+          //   buttonText="Login"
+          //   onSuccess={responseGoogle}
+          //   onFailure={responseGoogle}
+          //   cookiePolicy={'single_host_origin'}
+          // />
         }
       </div>
     );
