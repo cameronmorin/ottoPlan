@@ -161,7 +161,13 @@ async function getOwnEvents(auth, request_data) {
           }
           //console.log('within getOwnEvents, own_calendars: ' + JSON.stringify(own_calendars));
           
-          return listOwnEvents(auth, own_calendars, otto_cal_ID, request_data);
+        return new Promise( (resolve, reject) => {
+          listOwnEvents(auth, own_calendars, otto_cal_ID, request_data)
+            .then(event_info => {
+              console.log('\ngetOwnEvents event_info: ' + JSON.stringify(event_info) + '\n');
+              resolve(event_info);
+            });
+        });
     }).catch(err => {
         console.log(err.message, '\n');
     });
@@ -210,6 +216,7 @@ async function listOwnEvents(auth, own_calendars, otto_cal_ID, request_data) {
   //console.log('request_data.end_time' + request_data.end_time, '\n');
   //console.log('request_data: ' + JSON.stringify(request_data), '\n');
 
+  return new Promise( (resolve, reject) => {
   var own_events = [];
   // Honestly, I don't understand why 'i' makes everything work, but it does.
   // I tried replacing it with 'key', but that made everything blow up
@@ -235,23 +242,27 @@ async function listOwnEvents(auth, own_calendars, otto_cal_ID, request_data) {
         // TODO: add relevant events to a list to cross-reference
       }, (err, res) => {
         //console.log('i = ' + i + '; Object.keys(own_calendars).length = ' + Object.keys(own_calendars).length, '\n');
-        if (err) return console.log('The API returned an error: ' + err, '\n');
+        if (err) {
+            //return console.log('The API returned an error: ' + err, '\n');
+            reject('The API returned an error: ' + err);
+        }
         const events = res.data.items;
 
         //console.log('Calendar: ' + JSON.stringify(own_calendars[i].id), '\n');
 
         if (events.length) {
           //console.log('Upcoming events betweeen ' + request_data.scheduling_info.start.dateTime + ' and ' + request_data.scheduling_info.end.dateTime + ':');
-          console.log('Upcoming events betweeen ' + request_data.start_time + ' and ' + request_data.end_time + ':');
+          //console.log('Upcoming events betweeen ' + request_data.start_time + ' and ' + request_data.end_time + ':');
           events.map((event, key) => {
             own_events.push(event);
+            /*
             const start = event.start.dateTime || event.start.date;
             const end = event.end.dateTime || event.end.date;
-
             console.log(`${start}-${end} - ${event.summary}\n`);
+            */
           });
         } else {
-          console.log('No upcoming events found.\n');
+          //console.log('No upcoming events found.\n');
         }
 
         i++;
@@ -260,13 +271,14 @@ async function listOwnEvents(auth, own_calendars, otto_cal_ID, request_data) {
           console.log('Calling createEvent...\n');
           createEvent(auth, own_events, request_data).then(function(event) {
               console.log('listOwnEvents event: ' + JSON.stringify(event));
-              return event;
+              resolve(event);
           });
           //var event = createEvent(auth, request_data);
           //return createEvent(auth, request_data);
         }
       });
   }
+  });
     
   // Add info for time to schedule the event
   //request_data[eventStart] = 
@@ -280,7 +292,7 @@ async function createEvent(auth, own_events, request_data) {
   console.log('createEvent beginning...\n');
   //console.log('otto_cal_ID: ' + otto_cal_ID, '\n');
 
-  console.log(own_events);
+  //console.log(own_events);
   const calendar = google.calendar({version: 'v3', auth});
   var event = {
       // TODO: Update the rhs of these when form sends correct JSON
@@ -318,34 +330,36 @@ async function createEvent(auth, own_events, request_data) {
       }
   };
 
+  // Return a promise in order to wait before sending back
+  // This is the magic that made my hair turn grey
   return new Promise(function(resolve, reject) {
-  calendar.events.insert(
-      {
-          auth: auth,
-          //calendarId: otto_cal_ID,
-          calendarId: 'aa2ab10qanobloa2g9eqh7i50o@group.calendar.google.com',
-          //calendarId: 'primary',
-          resource: event,
-          sendNotifications: true,
-      },
-      function(err, event) {
-          if (err) {
-              console.log('Error creating Calendar event: ' + err, '\n');
-              console.log('event: ' + event, '\n');
-              event.success = "false";
-              event.msg = err;
-              console.log('createEvent returning failure...\n');
-              reject(event);
+      calendar.events.insert(
+          {
+              auth: auth,
+              //calendarId: otto_cal_ID,
+              calendarId: 'aa2ab10qanobloa2g9eqh7i50o@group.calendar.google.com',
+              //calendarId: 'primary',
+              resource: event,
+              sendNotifications: true,
+          },
+          function(err, event) {
+              if (err) {
+                  console.log('Error creating Calendar event: ' + err, '\n');
+                  console.log('event: ' + event, '\n');
+                  event.success = "false";
+                  event.msg = err;
+                  console.log('createEvent returning failure...\n');
+                  reject(event);
+              }
+              console.log('Event created: %s', event.data.htmlLink, '\n');
+
+              event.success = "true";
+              console.log('createEvent event: ' + JSON.stringify(event), '\n');
+
+              console.log('createEvent returning success...\n');
+              resolve(event);
           }
-          console.log('Event created: %s', event.data.htmlLink, '\n');
-
-          event.success = "true";
-          console.log('createEvent event: ' + JSON.stringify(event), '\n');
-
-          console.log('createEvent returning success...\n');
-          resolve(event);
-      }
-  );
+      );
   });
 }
 
