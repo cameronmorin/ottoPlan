@@ -1,7 +1,10 @@
 const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
-var urlencodedParser = bodyParser.urlencoded({ extended: false});
+app.use(bodyParser.urlencoded({ extended: false}));
+app.use(bodyParser.json());
+const asyncHandler = require('express-async-handler')
+//var urlencodedParser = bodyParser.urlencoded({ extended: false});
 
 const port = 5000;
 
@@ -32,19 +35,19 @@ async function authorize(credentials, callback, request_data) {
   const oAuth2Client = new google.auth.OAuth2(
       client_id, client_secret, redirect_uris[0]);
 
-  // Check if we have previously stored a token.
-  fs.readFile(TOKEN_PATH, (err, token) => {
-    if (err) return getAccessToken(oAuth2Client, callback);
-    oAuth2Client.setCredentials(JSON.parse(token));
-    return new Promise( (resolve, reject) => {
+  return new Promise( (resolve, reject) => {
+      // Check if we have previously stored a token.
+      fs.readFile(TOKEN_PATH, (err, token) => {
+        if (err) return getAccessToken(oAuth2Client, callback);
+        oAuth2Client.setCredentials(JSON.parse(token));
+
+        // Call scheduling function chain
         callback(oAuth2Client, request_data)
             .then(event_info => {
-                console.log('authorize event_info: ' + JSON.stringify(event_info) + '\n');
+                //console.log('authorize event_info: ' + JSON.stringify(event_info) + '\n');
                 resolve(event_info);
             })
-    });
-
-
+      });
   });
 }
 
@@ -84,12 +87,14 @@ app.listen(port, () => console.log(`Server started on port ${port}\n`));
 // Receive JSON scheduling request info from frontend
 // Send back JSON scheduling response to frontend
 // TODO: move this to the appropriate place so that the necessary response info is sent back
-app.post('/schedule_event', urlencodedParser, function(req, res) {
+app.post('/schedule_event', asyncHandler(async (req, res) => {
+    /*
     console.log('req.body from frontend: ' + JSON.stringify(req.body), '\n');
     console.log('req.body type: ' + typeof req.body, '\n');
-    var request_data = req.body;
     console.log('request_data from frontend: ' + JSON.stringify(request_data), '\n');
     var returned = {};
+    */
+    var request_data = req.body;
 
     // Load client secrets from a local file.
     fs.readFile('credentials.json', (err, content) => {
@@ -98,18 +103,19 @@ app.post('/schedule_event', urlencodedParser, function(req, res) {
         
       // Need to call API-accessing function from here
       // scheduleEvent calls other functions to look for available time slot and create event
-      returned = authorize(JSON.parse(content), scheduleEvent, request_data);
+      //returned = authorize(JSON.parse(content), scheduleEvent, request_data);
       authorize(JSON.parse(content), scheduleEvent, request_data)
         .then(event_info => {
-            console.log('post event_info: ' + JSON.stringify(event_info) + '\n');
+            //console.log('post event_info: ' + JSON.stringify(event_info) + '\n');
 
-            var data_out = require('./test_in');
-            data_out.event_info.summary = req.body.summary;
+            //var data_out = require('./test_in');
+            //data_out.event_info.summary = req.body.summary;
+            console.log('Sending event_info back to frontend...');
             res.json(event_info);
         });
     });
 
-});
+}));
 
 /* TODO: remove
 app.get('/schedule_event', (req, res) => {
@@ -125,13 +131,13 @@ app.get('/schedule_event', (req, res) => {
  * Calls getOwnEvents which returns a JSON of the user's own events
  */
 async function scheduleEvent(auth, request_data) {
-    console.log('request_data: ' + JSON.stringify(request_data), '\n');
-    console.log('request_data.start_time: ' + request_data.start_time, '\n');
+    //console.log('request_data: ' + JSON.stringify(request_data), '\n');
+    //console.log('request_data.start_time: ' + request_data.start_time, '\n');
 
     return new Promise( (resolve, reject) => {
         getOwnEvents(auth, request_data)
           .then(event_info => {
-            console.log('scheduleEvent event_info: ' + JSON.stringify(event_info) + '\n');
+            //console.log('scheduleEvent event_info: ' + JSON.stringify(event_info) + '\n');
             resolve(event_info);
           });
     });
@@ -172,7 +178,7 @@ async function getOwnEvents(auth, request_data) {
           
           listOwnEvents(auth, own_calendars, otto_cal_ID, request_data)
             .then(event_info => {
-              console.log('\ngetOwnEvents event_info: ' + JSON.stringify(event_info) + '\n');
+              //console.log('\ngetOwnEvents event_info: ' + JSON.stringify(event_info) + '\n');
               resolve(event_info);
             });
     }).catch(err => {
@@ -254,7 +260,7 @@ async function listOwnEvents(auth, own_calendars, otto_cal_ID, request_data) {
         if (i == Object.keys(own_calendars).length) {
           console.log('Calling createEvent...\n');
           createEvent(auth, own_events, request_data).then(function(event) {
-              console.log('listOwnEvents event: ' + JSON.stringify(event));
+              //console.log('listOwnEvents event: ' + JSON.stringify(event));
               resolve(event);
           });
           //var event = createEvent(auth, request_data);
@@ -309,6 +315,7 @@ async function createEvent(auth, own_events, request_data) {
           useDefault: false,
           overrides: [
               { method: 'email', minutes: 60 },
+              { method: 'email', minutes: 24 * 60 },
               { method: 'popup', minutes: 10 }
           ]
       }
@@ -329,7 +336,7 @@ async function createEvent(auth, own_events, request_data) {
           function(err, event) {
               if (err) {
                   console.log('Error creating Calendar event: ' + err, '\n');
-                  console.log('event: ' + event, '\n');
+                  //console.log('event: ' + event, '\n');
                   event.success = "false";
                   event.msg = err;
                   console.log('createEvent returning failure...\n');
@@ -338,7 +345,7 @@ async function createEvent(auth, own_events, request_data) {
               console.log('Event created: %s', event.data.htmlLink, '\n');
 
               event.success = "true";
-              console.log('createEvent event: ' + JSON.stringify(event), '\n');
+              //console.log('createEvent event: ' + JSON.stringify(event), '\n');
 
               console.log('createEvent returning success...\n');
               resolve(event);
