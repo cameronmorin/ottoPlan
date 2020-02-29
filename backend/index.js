@@ -27,7 +27,7 @@ const TOKEN_PATH = 'token.json';
 * @param {Object} credentials The authorization client credentials.
 * @param {function} callback The callback to call with the authorized client.
 */
-function authorize(credentials, callback, request_data) {
+async function authorize(credentials, callback, request_data) {
   const {client_secret, client_id, redirect_uris} = credentials.installed;
   const oAuth2Client = new google.auth.OAuth2(
       client_id, client_secret, redirect_uris[0]);
@@ -36,7 +36,15 @@ function authorize(credentials, callback, request_data) {
   fs.readFile(TOKEN_PATH, (err, token) => {
     if (err) return getAccessToken(oAuth2Client, callback);
     oAuth2Client.setCredentials(JSON.parse(token));
-    callback(oAuth2Client, request_data);
+    return new Promise( (resolve, reject) => {
+        callback(oAuth2Client, request_data)
+            .then(event_info => {
+                console.log('authorize event_info: ' + JSON.stringify(event_info) + '\n');
+                resolve(event_info);
+            })
+    });
+
+
   });
 }
 
@@ -91,13 +99,16 @@ app.post('/schedule_event', urlencodedParser, function(req, res) {
       // Need to call API-accessing function from here
       // scheduleEvent calls other functions to look for available time slot and create event
       returned = authorize(JSON.parse(content), scheduleEvent, request_data);
+      authorize(JSON.parse(content), scheduleEvent, request_data)
+        .then(event_info => {
+            console.log('post event_info: ' + JSON.stringify(event_info) + '\n');
+
+            var data_out = require('./test_in');
+            data_out.event_info.summary = req.body.summary;
+            res.json(event_info);
+        });
     });
 
-    console.log('returned: ' + returned, '\n');
-
-    var data_out = require('./test_in');
-    data_out.event_info.summary = req.body.summary;
-    res.json(data_out);
 });
 
 /* TODO: remove
@@ -117,17 +128,14 @@ async function scheduleEvent(auth, request_data) {
     console.log('request_data: ' + JSON.stringify(request_data), '\n');
     console.log('request_data.start_time: ' + request_data.start_time, '\n');
 
-    return await getOwnEvents(auth, request_data);
-    /*
-
-    console.log('own_calendars: ' + JSON.stringify(own_calendars), '\n');
-    var otto_cal_ID = getOttoCal(auth, own_calendars);
-    listOwnEvents(auth, own_calendars, request_data);
-
-    var msg = "Temporary message";
-
-    return msg;
-    */
+    return new Promise( (resolve, reject) => {
+        getOwnEvents(auth, request_data)
+          .then(event_info => {
+            console.log('scheduleEvent event_info: ' + JSON.stringify(event_info) + '\n');
+            resolve(event_info);
+          });
+    });
+    //return await getOwnEvents(auth, request_data);
 }
 
 /* Adapted from Google Calendar API's Node.js Quickstart
@@ -140,8 +148,9 @@ async function scheduleEvent(auth, request_data) {
 async function getOwnEvents(auth, request_data) {
   const calendar = google.calendar({version: 'v3', auth});
 
+  return new Promise( (resolve, reject) => {
   var calendars_list = {};
-  await calendar.calendarList.list()
+  calendar.calendarList.list()
     .then(resp => {
         //console.log(resp.data.items);
         calendars_list = resp.data.items;
@@ -161,42 +170,17 @@ async function getOwnEvents(auth, request_data) {
           }
           //console.log('within getOwnEvents, own_calendars: ' + JSON.stringify(own_calendars));
           
-        return new Promise( (resolve, reject) => {
           listOwnEvents(auth, own_calendars, otto_cal_ID, request_data)
             .then(event_info => {
               console.log('\ngetOwnEvents event_info: ' + JSON.stringify(event_info) + '\n');
               resolve(event_info);
             });
-        });
     }).catch(err => {
         console.log(err.message, '\n');
     });
+        });
 
 }
-
-/* No longer needed at this time; handled in getOwnEvents
-async function getOttoCal(auth, own_calendars) {
-
-  var otto_cal_ID = '';
-  for (var key in Object.keys(own_calendars)) {
-      // Search for existing ottoPlan calendar
-      if (own_calendars[key].summary == 'ottoPlan Meetings') {
-          otto_cal_ID = own_calendars[key].id;
-      }
-  }
-
-  // If no ottoPlan calendar, create one
-  if (otto_cal_ID == '') {
-      console.log('No ottoPlan calendar; creating new\n');
-      otto_cal_ID = await createCal(auth);
-  }
-  else {
-      console.log('Owned ottoPlan calendar exists\n');
-  }
-  //createEvent(auth, otto_cal_ID);
-
-  return otto_cal_ID;
-}*/
 
 
 // Creates list of owned events using start/end time in request_data
