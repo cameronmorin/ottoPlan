@@ -206,15 +206,18 @@ async function listOwnEvents(auth, own_calendars, otto_cal_ID, request_data) {
   */
 
   console.log('listOwnEvents begin...\n');
+  //console.log('request_data.start_time' + request_data.start_time, '\n');
+  //console.log('request_data.end_time' + request_data.end_time, '\n');
   //console.log('request_data: ' + JSON.stringify(request_data), '\n');
 
+  var own_events = [];
   // Honestly, I don't understand why 'i' makes everything work, but it does.
   // I tried replacing it with 'key', but that made everything blow up
   var i = 0;
   for (var key in Object.keys(own_calendars)) {
   // iterating numerically to call a function after last iteration, thereby bypassing await/async issue
   //for (i = 0; i < Object.keys(own_calendars).length; i++){
-      console.log('(in loop) Calendar: ' + JSON.stringify(own_calendars[key].id), '\n');
+      //console.log('(in loop) Calendar: ' + JSON.stringify(own_calendars[key].id), '\n');
 
       calendar.events.list({
         calendarId: own_calendars[key].id,
@@ -241,8 +244,11 @@ async function listOwnEvents(auth, own_calendars, otto_cal_ID, request_data) {
           //console.log('Upcoming events betweeen ' + request_data.scheduling_info.start.dateTime + ' and ' + request_data.scheduling_info.end.dateTime + ':');
           console.log('Upcoming events betweeen ' + request_data.start_time + ' and ' + request_data.end_time + ':');
           events.map((event, key) => {
+            own_events.push(event);
             const start = event.start.dateTime || event.start.date;
-            console.log(`${start} - ${event.summary}\n`);
+            const end = event.end.dateTime || event.end.date;
+
+            console.log(`${start}-${end} - ${event.summary}\n`);
           });
         } else {
           console.log('No upcoming events found.\n');
@@ -252,7 +258,7 @@ async function listOwnEvents(auth, own_calendars, otto_cal_ID, request_data) {
         // Call next function when all calendars iterated through
         if (i == Object.keys(own_calendars).length) {
           console.log('Calling createEvent...\n');
-          createEvent(auth, request_data).then(function(event) {
+          createEvent(auth, own_events, request_data).then(function(event) {
               console.log('listOwnEvents event: ' + JSON.stringify(event));
               return event;
           });
@@ -268,12 +274,13 @@ async function listOwnEvents(auth, own_calendars, otto_cal_ID, request_data) {
 
 }
 
-async function createEvent(auth, request_data) {
+async function createEvent(auth, own_events, request_data) {
   //var data_in = require('./test_in');
   //console.log(data_in, '\n');
   console.log('createEvent beginning...\n');
   //console.log('otto_cal_ID: ' + otto_cal_ID, '\n');
 
+  console.log(own_events);
   const calendar = google.calendar({version: 'v3', auth});
   var event = {
       // TODO: Update the rhs of these when form sends correct JSON
@@ -311,11 +318,13 @@ async function createEvent(auth, request_data) {
       }
   };
 
-  await calendar.events.insert(
+  return new Promise(function(resolve, reject) {
+  calendar.events.insert(
       {
           auth: auth,
           //calendarId: otto_cal_ID,
-          calendarId: 'primary',
+          calendarId: 'aa2ab10qanobloa2g9eqh7i50o@group.calendar.google.com',
+          //calendarId: 'primary',
           resource: event,
           sendNotifications: true,
       },
@@ -326,7 +335,7 @@ async function createEvent(auth, request_data) {
               event.success = "false";
               event.msg = err;
               console.log('createEvent returning failure...\n');
-              return event;
+              reject(event);
           }
           console.log('Event created: %s', event.data.htmlLink, '\n');
 
@@ -334,11 +343,14 @@ async function createEvent(auth, request_data) {
           console.log('createEvent event: ' + JSON.stringify(event), '\n');
 
           console.log('createEvent returning success...\n');
-          return event;
+          resolve(event);
       }
   );
+  });
 }
 
+/* Deprecated; no longer creating ottoPlan calendar
+// Creates a new ottoPlan calendar
 async function createCal(auth) {
   const calendar = google.calendar({version: 'v3', auth});
 
@@ -376,3 +388,4 @@ async function createCal(auth) {
   // console.log('New calendar ID: ' + new_id, '\n');
   return new_id;
 }
+*/
