@@ -1,28 +1,24 @@
-// import * as firebase from 'firebase/app';
+import * as firebase from 'firebase/app';
 // import 'firebase/auth';
 // import 'firebase/firestore';
 // import firebaseConfig from './fconfig';
 
+const saveUser = (uid) => {
+  const user = firebase.auth().currentUser;
+  const pData = user.providerData[0];
+  console.log(pData);
 
-// class Firebase {
-//   constructor() {
-//     firebase.initializeApp(firebaseConfig);
+  var db = firebase.firestore();
+  const userDoc = db.collection('users').doc(uid);
 
-//     // Helper
-//     this.fieldValue = firebase.firestore.FieldValue;
+  userDoc.set({
+    uid: pData.uid,
+    displayName: pData.displayName,
+    email: pData.email,
+    photoURL: pData.photoURL,
+    refreshToken: user.refreshToken
+  }, {merge: true}).then(() => {console.log('User Information Updated.');});
+}
 
-//     this.auth = firebase.auth();
-//     this.db = fireabse.firestore();
-  
-//     this.storage = firebase.storage();
-//     this.storageRef = this.storage.ref();
 
-//     // Google Auth Provider
-//     this.googleProvider = new firebase.auth.GoogleAuthProvider();
-//   }
-
-//   signInWithGoogle = () => {
-//     this.auth.signInWithPopup(this.googleProvider);
-//   }
-
-// }
+export default { saveUser };
