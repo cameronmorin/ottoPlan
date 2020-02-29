@@ -17,7 +17,7 @@ const {google} = require('googleapis');
 // If modifying these scopes, delete token.json.
 const SCOPES = [
   'https://www.googleapis.com/auth/calendar.readonly',
-  'https://www.googleapis.com/auth/calendar'
+  'https://www.googleapis.com/auth/calendar.events'
 ];
 // The file token.json stores the user's access and refresh tokens, and is
 // created automatically when the authorization flow completes for the first
@@ -35,6 +35,8 @@ async function authorize(credentials, callback, request_data) {
   const oAuth2Client = new google.auth.OAuth2(
       client_id, client_secret, redirect_uris[0]);
 
+  // No reject handled here because this won't be in the final code
+    // Auth will be occuring in frontend
   return new Promise( (resolve, reject) => {
       // Check if we have previously stored a token.
       fs.readFile(TOKEN_PATH, (err, token) => {
@@ -139,7 +141,10 @@ async function scheduleEvent(auth, request_data) {
           .then(event_info => {
             //console.log('scheduleEvent event_info: ' + JSON.stringify(event_info) + '\n');
             resolve(event_info);
-          });
+          })
+          .catch(err => {
+              reject(err);
+          })
     });
     //return await getOwnEvents(auth, request_data);
 }
@@ -164,6 +169,7 @@ async function getOwnEvents(auth, request_data) {
           var own_calendars = [];
           var otto_cal_ID = '';
           for (var key in Object.keys(calendars_list)) {
+              console.log('calendar: ' + calendars_list[key].summary + '\n');
               if (calendars_list[key].accessRole == 'owner') {
                   own_calendars.push(calendars_list[key]);
               }
@@ -180,7 +186,10 @@ async function getOwnEvents(auth, request_data) {
             .then(event_info => {
               //console.log('\ngetOwnEvents event_info: ' + JSON.stringify(event_info) + '\n');
               resolve(event_info);
-            });
+            })
+            .catch(err => {
+              reject(err);
+            })
     }).catch(err => {
         console.log(err.message, '\n');
     });
@@ -202,72 +211,76 @@ async function listOwnEvents(auth, own_calendars, otto_cal_ID, request_data) {
   */
 
   console.log('listOwnEvents begin...\n');
+  console.log('own_calendars: ' + own_calendars + '\n');
   //console.log('request_data.start_time' + request_data.start_time, '\n');
   //console.log('request_data.end_time' + request_data.end_time, '\n');
   //console.log('request_data: ' + JSON.stringify(request_data), '\n');
 
   return new Promise( (resolve, reject) => {
-  var own_events = [];
-  // Honestly, I don't understand why 'i' makes everything work, but it does.
-  // I tried replacing it with 'key', but that made everything blow up
-  var i = 0;
-  for (var key in Object.keys(own_calendars)) {
-  // iterating numerically to call a function after last iteration, thereby bypassing await/async issue
-  //for (i = 0; i < Object.keys(own_calendars).length; i++){
-      //console.log('(in loop) Calendar: ' + JSON.stringify(own_calendars[key].id), '\n');
+      var own_events = [];
+      // Honestly, I don't understand why 'i' makes everything work, but it does.
+      // I tried replacing it with 'key', but that made everything blow up
+      var i = 0;
+      for (var key in Object.keys(own_calendars)) {
+      // iterating numerically to call a function after last iteration, thereby bypassing await/async issue
+      //for (i = 0; i < Object.keys(own_calendars).length; i++){
+          //console.log('(in loop) Calendar: ' + JSON.stringify(own_calendars[key].id), '\n');
 
-      calendar.events.list({
-        calendarId: own_calendars[key].id,
-        //timeMin: (new Date()).toISOString(),
-        //TODO: after getting form to send the correct JSON, update these
-        //timeMin: request_data.scheduling_info.start.dateTime,
-        timeMin: request_data.start_time,
-        // TODO: End of time window
-        //timeMax: request_data.scheduling_info.end.dateTime,
-        timeMax: request_data.end_time,
-        //maxResults: 10,
-        singleEvents: true,
-        orderBy: 'startTime',
+          calendar.events.list({
+            calendarId: own_calendars[key].id,
+            //timeMin: (new Date()).toISOString(),
+            //TODO: after getting form to send the correct JSON, update these
+            //timeMin: request_data.scheduling_info.start.dateTime,
+            timeMin: request_data.start_time,
+            // TODO: End of time window
+            //timeMax: request_data.scheduling_info.end.dateTime,
+            timeMax: request_data.end_time,
+            //maxResults: 10,
+            singleEvents: true,
+            orderBy: 'startTime',
 
-        // TODO: add relevant events to a list to cross-reference
-      }, (err, res) => {
-        //console.log('i = ' + i + '; Object.keys(own_calendars).length = ' + Object.keys(own_calendars).length, '\n');
-        if (err) {
-            //return console.log('The API returned an error: ' + err, '\n');
-            reject('The API returned an error: ' + err);
-        }
-        const events = res.data.items;
+            // TODO: add relevant events to a list to cross-reference
+          }, (err, res) => {
+            //console.log('i = ' + i + '; Object.keys(own_calendars).length = ' + Object.keys(own_calendars).length, '\n');
+            if (err) {
+                //return console.log('The API returned an error: ' + err, '\n');
+                reject('The API returned an error: ' + err);
+            }
+            const events = res.data.items;
 
-        //console.log('Calendar: ' + JSON.stringify(own_calendars[i].id), '\n');
+            //console.log('Calendar: ' + JSON.stringify(own_calendars[i].id), '\n');
 
-        if (events.length) {
-          //console.log('Upcoming events betweeen ' + request_data.scheduling_info.start.dateTime + ' and ' + request_data.scheduling_info.end.dateTime + ':');
-          //console.log('Upcoming events betweeen ' + request_data.start_time + ' and ' + request_data.end_time + ':');
-          events.map((event, key) => {
-            own_events.push(event);
-            /*
-            const start = event.start.dateTime || event.start.date;
-            const end = event.end.dateTime || event.end.date;
-            console.log(`${start}-${end} - ${event.summary}\n`);
-            */
+            if (events.length) {
+              //console.log('Upcoming events betweeen ' + request_data.scheduling_info.start.dateTime + ' and ' + request_data.scheduling_info.end.dateTime + ':');
+              console.log('Upcoming events betweeen ' + request_data.start_time + ' and ' + request_data.end_time + ':');
+              events.map((event, key) => {
+                own_events.push(event);
+                const start = event.start.dateTime || event.start.date;
+                const end = event.end.dateTime || event.end.date;
+                console.log(`${start}-${end} - ${event.summary}\n`);
+              });
+            } else {
+              console.log('No upcoming events found.\n');
+            }
+
+            i++;
+            // Call next function when all calendars iterated through
+            if (i == Object.keys(own_calendars).length) {
+              console.log('Calling createEvent...\n');
+              createEvent(auth, own_events, request_data)
+                .then(function(event) {
+                  //console.log('listOwnEvents event: ' + JSON.stringify(event));
+                  resolve(event);
+                })
+                .catch(err => {
+                    reject(err);
+                })
+
+              //var event = createEvent(auth, request_data);
+              //return createEvent(auth, request_data);
+            }
           });
-        } else {
-          //console.log('No upcoming events found.\n');
-        }
-
-        i++;
-        // Call next function when all calendars iterated through
-        if (i == Object.keys(own_calendars).length) {
-          console.log('Calling createEvent...\n');
-          createEvent(auth, own_events, request_data).then(function(event) {
-              //console.log('listOwnEvents event: ' + JSON.stringify(event));
-              resolve(event);
-          });
-          //var event = createEvent(auth, request_data);
-          //return createEvent(auth, request_data);
-        }
-      });
-  }
+      }
   });
     
   // Add info for time to schedule the event
@@ -323,6 +336,7 @@ async function createEvent(auth, own_events, request_data) {
 
   // Return a promise in order to wait before sending back
   // This is the magic that made my hair turn grey
+  // shoutout to this man who saved my life: https://stackoverflow.com/a/44735241
   return new Promise(function(resolve, reject) {
       calendar.events.insert(
           {
@@ -355,6 +369,7 @@ async function createEvent(auth, own_events, request_data) {
 }
 
 /* Deprecated; no longer creating ottoPlan calendar
+ * Use of this would require changing scope from 'https://www.googleapis.com/auth/calendar.events' to 'https://www.googleapis.com/auth/calendar.events'
 // Creates a new ottoPlan calendar
 async function createCal(auth) {
   const calendar = google.calendar({version: 'v3', auth});
