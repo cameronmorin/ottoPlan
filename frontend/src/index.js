@@ -2,6 +2,7 @@ import React from 'react';
 import firebase from 'firebase';
 import ReactDOM from 'react-dom';
 import './style/index.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
 import firebaseConfig from './service/fconfig';
