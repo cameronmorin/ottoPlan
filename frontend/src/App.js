@@ -8,6 +8,16 @@ import StyledFirebaseAuth from 'react-firebaseui/StyledFirebaseAuth';
 import { GoogleLogin } from 'react-google-login';
 import backend from './service/firebase';
 
+import Sidebar from './Sidebar';
+import HomeIcon from '@material-ui/icons/Home';
+import SettingsIcon from '@material-ui/icons/Settings';
+import FriendIcon from '@material-ui/icons/People';
+import AccountIcon from '@material-ui/icons/AccountBox';
+import SignoutIcon from '@material-ui/icons/ExitToApp';
+import EventIcon from '@material-ui/icons/Event';
+import NotifIcon from '@material-ui/icons/Notifications';
+import UnreadIcon from '@material-ui/icons/NotificationImportant';
+
 const uiConfig = {
   signInFlow: 'popup',
   signInOptions: [
@@ -25,6 +35,23 @@ const uiConfig = {
   }
 };
 
+const items = [
+  { name: 'home', label: 'Home', Icon: HomeIcon},
+  { name: 'friends', label: 'Friends', Icon: FriendIcon},
+  { name: 'create event', label: 'Create Event', Icon: EventIcon},
+  { name: 'notifications', label: 'Notifications', Icon: unread ? UnreadIcon : NotifIcon},
+  { 
+    name: 'settings', 
+    label: 'Settings',
+    Icon: SettingsIcon,
+    items: [
+             {name: 'account', label: 'Account', Icon: AccountIcon},
+             {name: 'sign out', label: 'Sign Out', Icon: SignoutIcon},
+           ],
+  },
+]
+
+var unread = false;
 
 
 export default class App extends React.Component {
@@ -72,17 +99,22 @@ export default class App extends React.Component {
 
   render() {
     return (
+      <>
+      <div className="Menu">
+        {this.state.isAuthenticated ? <Sidebar items={items}/> : null}
+      </div>
       <div className="App-header">
         {this.state.isAuthenticated ? 
           <>
-            <img alt="profile pic" src={this.state.currentUser.photoURL} style={{height: "75px", width: "75px", borderRadius: "50%"}}/>
-            <p>Hello, {this.state.currentUser.displayName}!</p>
-            <button onClick={() => firebase.auth().signOut()}>Sign Out!</button> 
+            <img alt="profile picture" src={firebase.auth().currentUser.photoURL} style={{ height: "50px", width: "50px", borderRadius: "50%", position: "absolute", left: "10px", top: "15px"}}/>
+            <p>Hello, {firebase.auth().currentUser.displayName}!</p>
+            {/* <button onClick={() => firebase.auth().signOut()}>Sign Out!</button>  */}
           </>
           :
           <button onClick={this.popupSignIn}>Login Test</button>
         }
       </div>
+      </>
     );
   }
 }
