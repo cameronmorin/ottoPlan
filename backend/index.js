@@ -191,7 +191,7 @@ async function getOwnCal(auth, all_busy, request_data) {
                     */
                 }
 
-                getOwnEvents(auth, own_cal_ids, all_busy, request_data)
+                getOwnBusy(auth, own_cal_ids, all_busy, request_data)
                     .then(event_info => {
                         //console.log('\ngetOwnCal event_info: ' + JSON.stringify(event_info) + '\n');
                         resolve(event_info);
@@ -209,7 +209,7 @@ async function getOwnCal(auth, all_busy, request_data) {
 
 // Creates list of owned events using start/end time in request_data
 // Calls createEvent to schedule the event
-async function getOwnEvents(auth, own_cal_ids, all_busy, request_data) {
+async function getOwnBusy(auth, own_cal_ids, all_busy, request_data) {
     const calendar = google.calendar({version: 'v3', auth});
 
     /* No longer creating/using ottoPlan calendar to reduce permissions
@@ -219,11 +219,11 @@ async function getOwnEvents(auth, own_cal_ids, all_busy, request_data) {
     }
     */
 
-    console.log('getOwnEvents begin...\n');
+    console.log('Fetching user\'s busy times from Calendar API...\n');
     //console.log('own_cal_ids: ' + own_cal_ids + '\n');
     //console.log('request_data.start_time' + request_data.start_time, '\n');
     //console.log('request_data.end_time' + request_data.end_time, '\n');
-    console.log('request_data: ' + JSON.stringify(request_data), '\n');
+    //console.log('request_data: ' + JSON.stringify(request_data), '\n');
 
     return new Promise( (resolve, reject) => {
         calendar.freebusy.query({
@@ -233,6 +233,9 @@ async function getOwnEvents(auth, own_cal_ids, all_busy, request_data) {
                 //TODO HERE
                 items: own_cal_ids,
                 timeMin: request_data.start_time,
+                // TODO: fix timeMin call when form is sent correctly from frontEnd
+                //timeMin: request_data.scheduling_info.start.dateTime,
+                //timeMax: request_data.scheduling_info.end.dateTime,
                 timeMax: request_data.end_time,
                 // Request return data in PST instead of UTC
                 // TODO: apply something here that would accommodate different time zones
@@ -241,14 +244,20 @@ async function getOwnEvents(auth, own_cal_ids, all_busy, request_data) {
         })
             .then(busy_times => {
                 console.log('Response from Calendar API: ' + JSON.stringify(busy_times) + '\n');
+
+                // TODO: this
+                // Merge user busy_times with all_busy and return the new all_busy
+
+                /*
                 createEvent(auth, request_data)
                     .then(function(event) {
-                        //console.log('getOwnEvents event: ' + JSON.stringify(event));
+                        //console.log('getOwnBusy event: ' + JSON.stringify(event));
                         resolve(event);
                     })
                     .catch(err => {
                         reject(err);
                     })
+                */
                 
             }).catch(err => {
                 reject('Error contacting Calendar API: ' + err);
@@ -327,7 +336,7 @@ async function getOwnEvents(auth, own_cal_ids, all_busy, request_data) {
                     // TODO: adjust this function call which doesn't need 'own_events'
                     createEvent(auth, own_events, request_data)
                         .then(function(event) {
-                            //console.log('getOwnEvents event: ' + JSON.stringify(event));
+                            //console.log('getOwnBusy event: ' + JSON.stringify(event));
                             resolve(event);
                         })
                         .catch(err => {
@@ -346,11 +355,11 @@ async function getOwnEvents(auth, own_cal_ids, all_busy, request_data) {
 }
 
 async function createEvent(auth, request_data) {
-    console.log('createEvent beginning...\n');
+    console.log('Creating event using Calendar API...\n');
 
     //console.log(own_events);
     const calendar = google.calendar({version: 'v3', auth});
-    var event = {
+    var new_event = {
         // TODO: Update the rhs of these when form sends correct JSON
         //summary: request_data.event_info.summary,
         summary: request_data.summary,
@@ -361,13 +370,11 @@ async function createEvent(auth, request_data) {
         start: {
             //dateTime: request_data.scheduling_info.start.dateTime,
             dateTime: request_data.start_time,
-            //dateTime: '2020-02-19T20:00:00-05:00',
             //timeZone: 'America/Los_Angeles'
             //timeZone: request_data.scheduling_info.time_zone
         },
         end: {
             dateTime: request_data.end_time,
-            //dateTime: '2020-02-19T20:00:00-09:00',
             //timeZone: 'America/Los_Angeles'
             // timeZone: request_data.scheduling_info.time_zone
         },
@@ -399,26 +406,25 @@ async function createEvent(auth, request_data) {
                 // TODO: remove this and change back to primary when done with testing
                 calendarId: 'aa2ab10qanobloa2g9eqh7i50o@group.calendar.google.com',
                 //calendarId: 'primary',
-                resource: event,
+                resource: new_event,
                 sendNotifications: true,
             },
-            function(err, event) {
+            function(err, created_event) {
                 if (err) {
                     console.log('Error creating Calendar event: ' + err, '\n');
-                    //console.log('event: ' + event, '\n');
                     //TODO: remove this
-                    event.success = "false";
-                    event.msg = err;
+                    //event.success = "false";
+                    //event.msg = err;
                     console.log('createEvent returning failure...\n');
-                    reject(event);
+                    reject(err);
                 }
-                console.log('Event created: %s', event.data.htmlLink, '\n');
+                console.log('Event created: %s', created_event.data.htmlLink, '\n');
 
-                event.success = "true";
-                //console.log('createEvent event: ' + JSON.stringify(event), '\n');
+                //created_event.success = "true";
+                //console.log('createEvent event: ' + JSON.stringify(created_event), '\n');
 
                 console.log('createEvent returning success...\n');
-                resolve(event);
+                resolve(created_event);
             }
         );
     });
