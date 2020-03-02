@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import ReactDOM from 'react-dom';
 import './style/App.css';
-import 'bootstrap/dist/css/bootstrap.min.css'
-import Modal from 'react-bootstrap/Modal'
-import Button from 'react-bootstrap/Button'
-import ButtonToolbar from 'react-bootstrap/ButtonToolbar'
+import 'bootstrap/dist/css/bootstrap.min.css';
+import Modal from 'react-bootstrap/Modal';
+import Button from 'react-bootstrap/Button';
+import ButtonToolbar from 'react-bootstrap/ButtonToolbar';
 
 import firebase from 'firebase';
 import firebaseConfig from './service/fconfig';
