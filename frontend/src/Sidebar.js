@@ -2,18 +2,17 @@ import React from 'react'
 import firebase from 'firebase'
 import List from '@material-ui/core/List'
 import ListItem from '@material-ui/core/ListItem'
-import ListItemText from '@material-ui/core/ListItemText'
 import Divider from "@material-ui/core/Divider";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 import ExpandLessIcon from "@material-ui/icons/ExpandLess";
 import Collapse from "@material-ui/core/Collapse";
 import './sidebar.css'
 
-
 function SidebarItem({ depthStep = 10, depth = 0, expanded, item, ...rest }) {
     const [collapsed, setCollapsed] = React.useState(true);
     const { label, items, Icon, onClick: onClickProp } = item;
-
+    
+    
     function toggleClose() {
         setCollapsed(previous => !previous);
     }
@@ -22,6 +21,7 @@ function SidebarItem({ depthStep = 10, depth = 0, expanded, item, ...rest }) {
         if (item.label === 'Sign Out') {
             firebase.auth().signOut();
         }
+
         if (Array.isArray(items)) {
             toggleClose();
         }
@@ -32,6 +32,7 @@ function SidebarItem({ depthStep = 10, depth = 0, expanded, item, ...rest }) {
 
     let expandedIcon;
 
+    //toggles expand arrow
     if (Array.isArray(items) && items.length) {
         expandedIcon = !collapsed ? (
             <ExpandLessIcon className={"expand-arrow"} />
@@ -39,6 +40,7 @@ function SidebarItem({ depthStep = 10, depth = 0, expanded, item, ...rest }) {
             <ExpandMoreIcon className={"expand-arrow"} />
         );
     }
+
     return (
       <>
         <ListItem 
