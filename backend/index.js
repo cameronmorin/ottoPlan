@@ -230,16 +230,16 @@ async function getOwnBusy(auth, own_cal_ids, all_busy, request_data) {
             auth: auth,
             headers: {"content-type": "application/json" },
             resource:{
-                //TODO HERE
                 items: own_cal_ids,
                 timeMin: request_data.start_time,
                 // TODO: fix timeMin call when form is sent correctly from frontEnd
                 //timeMin: request_data.scheduling_info.start.dateTime,
                 //timeMax: request_data.scheduling_info.end.dateTime,
                 timeMax: request_data.end_time,
-                // Request return data in PST instead of UTC
-                // TODO: apply something here that would accommodate different time zones
-                timeZone: "-0800"
+                
+                // Compiling the list of busy times all in UTC to account for possible variety of time zones accross all calendars
+                // To request return data in PST instead of UTC:
+                // timeZone: "-0800"
             }
         })
             .then(busy_times => {
@@ -432,7 +432,7 @@ async function createEvent(auth, request_data) {
 
 // Replaces Date.parse() to convert RFC3339 format date/time to unix timestamp
 // https://stackoverflow.com/a/11318669
-function parseRFCDate(rfc_in) {
+function parseDate(rfc_in) {
     var m = googleDate.exec(d);
     var year   = +m[1];
     var month  = +m[2];
@@ -448,28 +448,117 @@ function parseRFCDate(rfc_in) {
     return new Date(year, month - 1, day, hour, minute - tzOffset, second, msec);
 }
 
-/* Merges two sorted arrays
- * Used to merge own_events into all_busy
- * Accepts the duration of the goal event so that any gaps between existing events that does not 
-function mergeSortedArray(arr1, arr2) {
-    var combined = [], i = 0, j = 0;
+// Given two times, returns true if time1 is earlier than time2
+function startsEarlier(time1, time2) {
+    if(parseDate(time1) <= parseDate(time2)) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
 
-    while (i < arr1.length && j < arr2.length) {
-        if (compare_date(arr1[i], arr2[j]) > 0) {
-            sorted.push(arr2[j++]);
+// Given a length of time in 00h:00m format, return length in seconds
+function toSec(duration) {
+    var secs = duration.hr * 3600;
+    secs += duration.min * 60;
+    return secs;
+}
+
+// Given an end time, start time, and a duration return true if gap is >= duration
+// Convert times to unix timestamp and get their difference (given in s)
+// Convert duration to s and compare; if duration >= difference, return true
+function gapOkay(end_first, start_next, duration) {
+    gap_length = parseDate(end_first) - parseDate(start_next);
+    dur_sec = toSec(duration);
+
+    if (dur_sec >= gap_length) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+/* Merges user's busy times into all_busy
+ * Accepts the duration of the goal event so that any too-short gaps between existing events that does not get saved as a valid block
+ */
+function merge_busy(all_busy, user_busy, duration) {
+    var new_busy = [], i = 0, j = 0;
+
+    while (i < all_busy.length && j < user_busy.length) {
+        // If a busy period start time is after the previous busy period's end time
+        // AND the busy period's end time is before the next busy period's start time
+        // AND the gap length >= duration, push the event
+        if (startsEarlier(all_busy[i].end_time, user_busy.start_time) && startsEarlier(a
+
+        // all_busy[i] starts before or at same time as user_busy[j]
+        if (startsEarlier(all_busy[i].start_time, user_busy[j].start_time) {
+            
+            // Case 1: busy windows don't overlap
+            // Check that all_busy[i].end_time is before or at same time as user_busy[j].start_time
+            // TODO: if the next event starts at the same time the previous one ends, combine busy periods and don't waste time calculating gap duration
+            if (startsEarlier(all_busy[i].end_time, user_busy[j].start_time)) {
+                
+                // If gap between times is >= duration, save all_busy[i]
+                // (Don't push user_busy[j] yet; need to check if it overlaps with next all_busy event first)
+                if (gapOkay(all_busy[i].end_time, user_busy[j].start_time, duration)) {
+                    new_busy.push(all_busy[i++]);
+                }
+
+                // Gap is not long enough; combine busy periods and push
+                else {
+                    all_busy[i].end_time = user_busy[j++].end_time;
+                    new_busy.push(all_busy[i++]);
+                }
+            }
+            
+            // Case 2: periods overlap (potentially completely)
+            // Store period with earlier start time and edit to have later end time if necessary
+            // all_busy[i] starts before or at same time as user_busy[j]
+            else {
+                
+            }
+        }
+        else {
+
+        }
+
+        // If a busy1 starts after busy2 and ends before busy2, discard busy1
+        if (startsEarlier(all_busy[i].start_time, user_busy.start_time) && startsEarlier(all_busy[i].end_
+        
+        // Determine where to place event
+        if (startsEarlier(all_busy[i].start_time, user_busy[j].start_time) {
+
+        // Case 1: busy windows don't overlap
+        // Check if new available window < duration
+        // If not, add new busy window
+        // Else edit existing busy window to include new event AND too-short gap
+        if (startsEarlier(all_busy[i].end_time, user_busy[j].start_time))
+        
+        // Case 2: One event is engulfed by the other
+        // Store only the engulfing event
+        
+        // Case 3: busy windows overlap
+        // Longer event absorbs the other event to result in a single event that covers both busy times
+        // Check if length between preceeding and following busy times is < duration
+        // If gap < duration, events are combined into one to include the too-short gap
+
+        if (compare_date(all_busy[i], user_busy[j]) > 0) {
+            new_busy.push(user_busy[j++]);
         } else {
-            sorted.push(arr1[i++]);
+            new_busy.push(all_busy[i++]);
         }
     }
 
-    // If arr1 still has elements, concatenate them to the end of the array
-    if (j < arr2.length) {
-        sorted = sorted.concat(arr2.slice(j));
+    // If user_busy still has elements, concatenate them to the end of the new all busy array
+    if (j < user_busy.length) {
+        new_busy = new_busy.concat(user_busy.slice(j));
     } else {
-        sorted = sorted.concat(arr1.slice(i));
+        new_busy = new_busy.concat(all_busy.slice(i));
     }
 
-    return sorted;
+    return new_busy;
 }
 
 /* Compares the start/end dates of 2 event objects
