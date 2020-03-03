@@ -81,6 +81,7 @@ class EventForm extends React.Component {
                         {value: '120', display: '2 hours'},
                     ],
                     from: 'schedule',
+                    duration: { hr: '', min: ''},
                 },
             },
 
@@ -143,10 +144,24 @@ class EventForm extends React.Component {
             if (this.state.formControls[id].from === 'event') {
                 data.event_info[id] = this.state.formControls[id].value;
             }
-            else {
-                data.schedule_info[id] = this.state.formControls[id].value;
-            }
+            // else {
+            //     data.schedule_info[id] = this.state.formControls[id].value;
+            // }
         }
+        
+
+        data.schedule_info["duration"] = {hr: '', min: ''};
+
+        let hour = -1;
+        let val = this.state.formControls["event_duration"].value
+        while (val > 0) {
+            val -= 60;
+            hour += 1;
+        }
+
+
+        data.schedule_info["duration"].hr = hour.toString();
+        data.schedule_info["duration"].min = (this.state.formControls["event_duration"].value % 60).toString();
 
         data.schedule_info["start_date"] = this.state.startDate;
         data.schedule_info["end_date"] = this.state.endDate;
@@ -191,7 +206,7 @@ class EventForm extends React.Component {
                     timeCaption="time"
                     dateFormat="MMMM d, yyyy h:mm aa"    
                 />
-                <Select name="event_duration" initVal= {this.state.formControls.event_duration.initVal} value={this.state.formControls.event_duration.value} onChange={this.changeHandler} display={this.state.formControls.event_duration.display} valid={this.state.formControls.event_duration.valid} touched={this.state.formControls.event_duration.touched} options={this.state.formControls.event_duration.options}/>
+                <Select name="event_duration" initVal= {this.state.formControls.event_duration.initVal} hr={this.state.formControls.event_duration.duration.hr} min={this.state.formControls.event_duration.duration.min} onChange={this.changeHandler} display={this.state.formControls.event_duration.display} valid={this.state.formControls.event_duration.valid} touched={this.state.formControls.event_duration.touched} options={this.state.formControls.event_duration.options}/>
                 
                 <button onClick={this.formSubmitHandler} disabled={!this.state.formValid}> Submit </button>
             </div>
