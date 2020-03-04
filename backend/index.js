@@ -487,43 +487,125 @@ function merge_busy(all_busy, user_busy, duration) {
     var new_busy = [], i = 0, j = 0;
 
     while (i < all_busy.length && j < user_busy.length) {
-        // If a busy period start time is after the previous busy period's end time
-        // AND the busy period's end time is before the next busy period's start time
-        // AND the gap length >= duration, push the event
-        if (startsEarlier(all_busy[i].end_time, user_busy.start_time) && startsEarlier(a
 
         // all_busy[i] starts before or at same time as user_busy[j]
         if (startsEarlier(all_busy[i].start_time, user_busy[j].start_time) {
             
             // Case 1: busy windows don't overlap
             // Check that all_busy[i].end_time is before or at same time as user_busy[j].start_time
-            // TODO: if the next event starts at the same time the previous one ends, combine busy periods and don't waste time calculating gap duration
             if (startsEarlier(all_busy[i].end_time, user_busy[j].start_time)) {
                 
-                // If gap between times is >= duration, save all_busy[i]
+                // If gap between times is >= duration, push all_busy[i]
                 // (Don't push user_busy[j] yet; need to check if it overlaps with next all_busy event first)
                 if (gapOkay(all_busy[i].end_time, user_busy[j].start_time, duration)) {
                     new_busy.push(all_busy[i++]);
+                    //TODO: return here so don't have to parse entirety of both arrays
                 }
 
-                // Gap is not long enough; combine busy periods and push
+                // Gap is not long enough; combine busy periods into element with later end time
+                // Increment earlier end time array 
+                // Don't push combined event yet in case overlaps with next event
                 else {
                     all_busy[i].end_time = user_busy[j++].end_time;
-                    new_busy.push(all_busy[i++]);
+                    //new_busy.push(all_busy[i++]);
                 }
             }
             
             // Case 2: periods overlap (potentially completely)
-            // Store period with earlier start time and edit to have later end time if necessary
-            // all_busy[i] starts before or at same time as user_busy[j]
+            // Store period with later start time and edit to have earlier start time
+            // Discard the period with the earlier end time (increment)
+            // and don't push the event with the later end time in order to calculate next gap/overlap
+            //  (This is in case there is a series of overlapping events; the one that ends later cannot be from the same array as the next overlapping event)
             else {
-                
+                // all_busy[i] starts before or at same time as user_busy[j]
+                // Determine which end_time is later
+                if (startsEarlier(all_busy[i].end_time, user_busy[j].end_time)) {
+                    // user_busy ends later; edit start time and increment all_busy
+                    user_busy[j].start_time = all_busy[i++].start_time;
+                }
+
+                // all_busy[i] starts earlier and ends later; discard user_busy[j]
+                else {
+                    j++;
+                }
             }
         }
+
+
+        // user_busy[j] starts before or at same time as all_busy[i]
         else {
+            // Case 1: busy windows don't overlap
+            // Check that user_busy[j].end_time is before or at same time as all_busy[i].start_time 
+            if (startsEarlier(user_busy[j].end_time, all_busy[i].start_time)) {
+                
+                // If gap between times is >= duration, push user_busy[j]
+                // (Don't push all_busy[i] yet; need to check if it overlaps with next all_busy event first)
+                if (gapOkay(user_busy[j].start_time, all_busy[i].end_time, duration)) {
+                    new_busy.push(user_busy[j++]);
+                    //TODO: return here so don't have to parse entirety of both arrays
+                }
 
+                // Gap is not long enough; combine busy periods into element with later end time
+                // Increment earlier end time array 
+                // Don't push combined event yet in case overlaps with next event
+                else {
+                    user_busy[j].end_time = all_busy[i++].end_time;
+                }
+            }
+            
+            // Case 2: periods overlap (potentially completely)
+            // Store period with later start time and edit to have earlier start time
+            // Discard the period with the earlier end time (increment)
+            // and don't push the event with the later end time in order to calculate next gap/overlap
+            //  (This is in case there is a series of overlapping events; the one that ends later cannot be from the same array as the next overlapping event)
+            else {
+                // user_busy[j] starts before or at same time as all_busy[i] 
+                // Determine which end_time is later
+                if (startsEarlier(user_busy[j].end_time, all_busy[i].end_time)) {
+                    // all_busy ends later; edit start time and increment user_busy
+                    all_busy[i].start_time = user_busy[j++].start_time;
+                }
+
+                // user_busy[j] starts earlier and ends later; discard all_busy[i] 
+                else {
+                    i++;
+                }
+            }
         }
+    }
 
+    // If either array still has elements, remove too-short gaps and push
+    if (j < user_busy.length) {
+        while (j < user_busy.length - 1) {
+            if (gapOkay(user_busy[j].end_time, user_busy[j + 1].start_time, duration)) {
+                new_busy.push(user_busy[j++]);
+            }
+            else {
+                // consolidate the events and discard the first
+                // Don't push second yet; must check for sufficient gap length
+                user_busy[j + 1].start_time = user_busy[j].start_time;
+                j++;
+            }
+        }
+        // Push the last element
+        new_busy.push(user_busy[j]);
+    } 
+    else {
+        /* Since all_busy is initially empty and is always built to avoid too-short gaps,
+         *   don't need to perform these checks; just concatenate remaining contents 
+        if (gapOkay(all_busy[i].end_time, all_busy[i + 1].start_time, duration)) {
+            new_busy.push(all_busy[i++]);
+        }
+        else {
+            // consolidate the events and discard the first
+            // Don't push second yet; must check for sufficient gap length
+            all_busy[i + 1].start_time = all_busy[i].start_time;
+            j++;
+        }
+        */
+        new_busy = new_busy.concat(all_busy.slice(i));
+    }
+    /*
         // If a busy1 starts after busy2 and ends before busy2, discard busy1
         if (startsEarlier(all_busy[i].start_time, user_busy.start_time) && startsEarlier(all_busy[i].end_
         
@@ -551,12 +633,14 @@ function merge_busy(all_busy, user_busy, duration) {
         }
     }
 
+
     // If user_busy still has elements, concatenate them to the end of the new all busy array
     if (j < user_busy.length) {
         new_busy = new_busy.concat(user_busy.slice(j));
     } else {
         new_busy = new_busy.concat(all_busy.slice(i));
     }
+    */
 
     return new_busy;
 }
