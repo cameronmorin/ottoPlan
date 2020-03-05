@@ -244,11 +244,12 @@ async function getOwnBusy(auth, own_cal_ids, all_busy, request_data) {
         })
             .then(busy_times => {
                 console.log('Response from Calendar API: ' + JSON.stringify(busy_times) + '\n');
+                duration = "01:00";
 
                 // TODO: this
                 // Merge user busy_times with all_busy and return the new all_busy
+                all_busy = merge_busy(all_busy, busy_times, duration);
 
-                /*
                 createEvent(auth, request_data)
                     .then(function(event) {
                         //console.log('getOwnBusy event: ' + JSON.stringify(event));
@@ -257,7 +258,6 @@ async function getOwnBusy(auth, own_cal_ids, all_busy, request_data) {
                     .catch(err => {
                         reject(err);
                     })
-                */
                 
             }).catch(err => {
                 reject('Error contacting Calendar API: ' + err);
@@ -433,6 +433,8 @@ async function createEvent(auth, request_data) {
 // Replaces Date.parse() to convert RFC3339 format date/time to unix timestamp
 // https://stackoverflow.com/a/11318669
 function parseDate(rfc_in) {
+    console.log('rfc_in: ' + rfc_in);
+
     var m = googleDate.exec(d);
     var year   = +m[1];
     var month  = +m[2];
@@ -444,8 +446,10 @@ function parseDate(rfc_in) {
     var tzHour = +m[8];
     var tzMin  = +m[9];
     var tzOffset = new Date().getTimezoneOffset() + tzHour * 60 + tzMin;
+    var new_date = new Date(year, month - 1, day, hour, minute - tzOffset, second, msec);
 
-    return new Date(year, month - 1, day, hour, minute - tzOffset, second, msec);
+    console.log('unix timestamp: ' + new_date + '\n');
+    return new_date;
 }
 
 // Given two times, returns true if time1 is earlier than time2
@@ -470,6 +474,7 @@ function toSec(duration) {
 // Convert duration to s and compare; if duration >= difference, return true
 function gapOkay(end_first, start_next, duration) {
     gap_length = parseDate(end_first) - parseDate(start_next);
+    console.log('gap_length: ' + gap_length + '\n');
     dur_sec = toSec(duration);
 
     if (dur_sec >= gap_length) {
@@ -486,10 +491,13 @@ function gapOkay(end_first, start_next, duration) {
 function merge_busy(all_busy, user_busy, duration) {
     var new_busy = [], i = 0, j = 0;
 
+    console.log('all_busy: ' + all_busy + '\n');
+    console.log('user_busy: ' + user_busy + '\n');
+
     while (i < all_busy.length && j < user_busy.length) {
 
         // all_busy[i] starts before or at same time as user_busy[j]
-        if (startsEarlier(all_busy[i].start_time, user_busy[j].start_time) {
+        if (startsEarlier(all_busy[i].start_time, user_busy[j].start_time)) {
             
             // Case 1: busy windows don't overlap
             // Check that all_busy[i].end_time is before or at same time as user_busy[j].start_time
@@ -498,6 +506,7 @@ function merge_busy(all_busy, user_busy, duration) {
                 // If gap between times is >= duration, push all_busy[i]
                 // (Don't push user_busy[j] yet; need to check if it overlaps with next all_busy event first)
                 if (gapOkay(all_busy[i].end_time, user_busy[j].start_time, duration)) {
+                    console.log('Available slot from ' + all_busy[i].end_time + ' to ' + user_busy[j].start_time + '\n');
                     new_busy.push(all_busy[i++]);
                     //TODO: return here so don't have to parse entirety of both arrays
                 }
@@ -541,6 +550,7 @@ function merge_busy(all_busy, user_busy, duration) {
                 // If gap between times is >= duration, push user_busy[j]
                 // (Don't push all_busy[i] yet; need to check if it overlaps with next all_busy event first)
                 if (gapOkay(user_busy[j].start_time, all_busy[i].end_time, duration)) {
+                    console.log('Available slot from ' + user_busy[j].end_time + ' to ' + all_busy[i].start_time + '\n');
                     new_busy.push(user_busy[j++]);
                     //TODO: return here so don't have to parse entirety of both arrays
                 }
@@ -642,6 +652,7 @@ function merge_busy(all_busy, user_busy, duration) {
     }
     */
 
+    console.log('new_busy: ' + new_busy + '\n');
     return new_busy;
 }
 
