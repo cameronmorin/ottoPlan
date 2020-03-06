@@ -76,6 +76,14 @@ export default class App extends React.Component {
       console.log(error);
     });
   }
+  signOut = () => {
+    firebase.auth().signOut().then(() => {
+      console.log('Sign out successful.');
+      window.location.reload();
+    }).catch(error => {
+      console.log('Error signing out: ', error);
+    });
+  }
 
   render() {
     return (
@@ -83,7 +91,7 @@ export default class App extends React.Component {
         {this.state.isAuthenticated ?
           <div className='home-grid'>
             <div className='hg-left'>
-              <Sidebar photo={this.state.currentUser.photoURL}/>
+              <Sidebar photo={this.state.currentUser.photoURL} signOut={this.signOut}/>
             </div>
             <div className='hg-right'>
               {/* <form onSubmit={this.onSubmit}>
