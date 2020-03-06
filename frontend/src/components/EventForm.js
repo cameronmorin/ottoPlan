@@ -169,6 +169,7 @@ class EventForm extends React.Component {
 
         data.schedule_info["start_date"] = this.state.startDate;
         data.schedule_info["end_date"] = this.state.endDate;
+        data.schedule_info["timezone"] = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
         //event info
         alert(JSON.stringify(data, null, 2));
@@ -188,6 +189,7 @@ class EventForm extends React.Component {
                 <DatePicker 
                     selected={this.state.startDate} 
                     onChange={this.changeStartHandler}
+                    inline
                     showMonthDropdown
                     showYearDropdown
                     showTimeSelect
@@ -197,21 +199,24 @@ class EventForm extends React.Component {
                     timeIntervals={15}
                     timeCaption="time"
                     dateFormat="MMMM d, yyyy h:mm aa"    
+                    placeholderText="Select a starting date/time"
                 />
                 <label>End Date</label>
                 <DatePicker 
                     selected={this.state.endDate} 
                     onChange={this.changeEndHandler}
+                    inline
                     showTimeSelect
                     minTime={min}
                     maxTime={max}
-                    timeFormat="hh:mm aa"
                     timeIntervals={15}
                     timeCaption="time"
+                    timeFormat="hh:mm aa"
                     dateFormat="MMMM d, yyyy h:mm aa"    
+                    placeholderText="Select an ending date/time"
                 />
                 <Select name="event_duration" initVal= {this.state.formControls.event_duration.initVal} hr={this.state.formControls.event_duration.duration.hr} min={this.state.formControls.event_duration.duration.min} onChange={this.changeHandler} display={this.state.formControls.event_duration.display} valid={this.state.formControls.event_duration.valid} touched={this.state.formControls.event_duration.touched} options={this.state.formControls.event_duration.options}/>
-                
+            
                 <button onClick={this.formSubmitHandler} disabled={!this.state.formValid}> Submit </button>
             </div>
         );
