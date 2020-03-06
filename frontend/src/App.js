@@ -38,6 +38,33 @@ export default class App extends React.Component {
     });
   }
 
+  updateEmail = event => {
+    // console.log(event.target.value);
+    this.setState({searchEmail: event.target.value});
+  }
+
+  onSubmit = async event => {
+    console.log('Calling backend');
+    await backend.searchUserByEmail(this.state.searchEmail).then(result => {
+      console.log('Result: ', result);
+      console.log('size: ', result.length);
+      result.forEach(doc => {
+        console.log(doc.id, '=> ', doc.data());
+      });
+      // if (result.length == 0) {
+      //   console.log('No results.');
+      // }
+      // else {
+      //   result.forEach(doc => {
+      //     console.log(doc.id, '=> ', doc.data());
+      //   });
+      // }
+    }).catch(error => {
+      console.log('Error getting documents: ', error);
+    });
+    console.log('finished');
+  }
+
   popupSignIn = () => {
     var GoogleProvider = new firebase.auth.GoogleAuthProvider();
     GoogleProvider.addScope('https://www.googleapis.com/auth/calendar.events');
@@ -50,6 +77,14 @@ export default class App extends React.Component {
       console.log(error);
     });
   }
+  signOut = () => {
+    firebase.auth().signOut().then(() => {
+      console.log('Sign out successful.');
+      window.location.reload();
+    }).catch(error => {
+      console.log('Error signing out: ', error);
+    });
+  }
 
   render() {
     return (
@@ -57,10 +92,15 @@ export default class App extends React.Component {
         {this.state.isAuthenticated ?
           <div className='home-grid'>
             <div className='hg-left'>
-              <Sidebar photo={this.state.currentUser.photoURL}/>
+              <Sidebar photo={this.state.currentUser.photoURL} signOut={this.signOut}/>
             </div>
             <div className='hg-right'>
-              <p className='home-quip'>dashboard</p>
+              {/* <form onSubmit={this.onSubmit}>
+                <label>Email: */}
+                  <input type='text' name='name'onChange={this.updateEmail}/>
+                  <button onClick={this.onSubmit}>Click Me</button>
+                {/* </label>
+              </form> */}
             </div>
           </div>
           :

@@ -20,5 +20,10 @@ const saveUser = (uid) => {
   }, {merge: true}).then(() => {console.log('User Information Updated.');});
 }
 
+const searchUserByEmail = async searchEmail => {
+  var db = firebase.firestore();
+  return db.collection('users').where('email', '==', searchEmail).get();
+}
 
-export default { saveUser };
+
+export default { saveUser, searchUserByEmail };
