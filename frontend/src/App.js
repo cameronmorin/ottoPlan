@@ -1,77 +1,17 @@
-import React, { useState } from 'react';
-import './style/App.css';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import Modal from 'react-bootstrap/Modal';
-import Button from 'react-bootstrap/Button';
-import ButtonToolbar from 'react-bootstrap/ButtonToolbar';
-
+import React from 'react';
 import firebase from 'firebase';
-import firebaseConfig from './service/fconfig';
-import StyledFirebaseAuth from 'react-firebaseui/StyledFirebaseAuth';
+import './style/App.css';
+import backend from './service/firebase';
+import {Button} from 'react-bootstrap';
 
-import Sidebar from './Sidebar';
-import Grid from '@material-ui/core/Grid'
-import HomeIcon from '@material-ui/icons/Home';
-import SettingsIcon from '@material-ui/icons/Settings';
-import FriendIcon from '@material-ui/icons/People';
-import AccountIcon from '@material-ui/icons/AccountBox';
-import SignoutIcon from '@material-ui/icons/ExitToApp';
-import NotifIcon from '@material-ui/icons/Notifications';
-import UnreadIcon from '@material-ui/icons/NotificationImportant';
-
-import EventForm from './EventForm'
-
-const uiConfig = {
-  signInFlow: 'popup',
-  signInOptions: [
-    firebase.auth.GoogleAuthProvider.PROVIDER_ID
-  ],
-  callbacks: {
-    signInSuccess: () => false
-  }
-};
-
-const items = [
-  { name: 'home', label: 'Home', Icon: HomeIcon},
-  { name: 'friends', label: 'Friends', Icon: FriendIcon},
-  { name: 'notifications', label: 'Notifications', Icon: unread ? UnreadIcon : NotifIcon},
-  { 
-    name: 'settings', 
-    label: 'Settings',
-    Icon: SettingsIcon,
-    items: [
-             {name: 'account', label: 'Account', Icon: AccountIcon},
-             {name: 'sign out', label: 'Sign Out', Icon: SignoutIcon},
-           ],
-  },
-]
-
-function LaunchForm() {
-  const [show, setShow] = useState(false);
-  const handleClose = () => setShow(false);
-  const handleShow = () => setShow(true);
-
-  return (
-    <ButtonToolbar>
-      <Button onClick={handleShow}>
-        Create an Event
-      </Button>
-
-      <Modal show={show} onHide={handleClose}>
-        <Modal.Header closeButton>
-          <Modal.Title>Create an Event</Modal.Title>
-        </Modal.Header>
-        <Modal.Body> <EventForm /> </Modal.Body>
-      </Modal>
-    </ButtonToolbar>
-  );
-}
-
-var unread = false;
+import Sidebar from './components/Sidebar';
 
 export default class App extends React.Component {
   constructor(props) {
     super(props);
+    
+    this.db = firebase.firestore();
+
     this.state = {
       isAuthenticated: false,
       currentUser: null,
@@ -82,56 +22,53 @@ export default class App extends React.Component {
 
   componentDidMount = () => {
     firebase.auth().onAuthStateChanged(user => {
-      this.setState({
-        isAuthenticated: !!user
-      });
-
       // Update state user object
-      if (!!user) {
-        this.setState({currentUser: user.providerData[0], isAuthenticated: !!user});
-        // Check if user is in DB
+      if (user) {
+        this.setState({
+          isAuthenticated: true,
+          currentUser: user.providerData[0]
+        });
       }
       else {
-        this.setState({currentUser: null, isAuthenticated: !!user});
+        this.setState({
+          isAuthenticated: false,
+          currentUser: null
+        });
       }
     });
   }
 
-  componentDidUpdate = () => {
-    if (!this.state.isAuthenticated) {
-      console.log('Redirecting to sign in...');
-    }
+  popupSignIn = () => {
+    var GoogleProvider = new firebase.auth.GoogleAuthProvider();
+    GoogleProvider.addScope('https://www.googleapis.com/auth/calendar.events');
+    GoogleProvider.addScope('https://www.googleapis.com/auth/calendar.readonly');
+    firebase.auth().signInWithPopup(GoogleProvider).then(result => {
+      console.log('Succes!\n', result);
+      backend.saveUser(result.additionalUserInfo.profile.id);
+    }).catch(error => {
+      console.log('Error signing in.');
+      console.log(error);
+    });
   }
 
   render() {
     return (
-      <div>
+      <div className='App'>
         {this.state.isAuthenticated ?
-          <Grid container maxWidth="xl" justify="flex-start" alignItems="flex-start" spacing={3} className="Menu">
-            <Grid item xs={12}>
-              <img alt="profile picture" src={firebase.auth().currentUser.photoURL} style={{ height: "50px", width: "50px", borderRadius: "50%"}}/>
-            </Grid>
-            <Grid item xs={12}>
-              <Sidebar items={items}/>
-            </Grid>
-            <Grid item className="App-header" xs={12}>
-              {this.state.isAuthenticated ? 
-                <>
-                    <LaunchForm />
-                </>
-                : 
-                <StyledFirebaseAuth
-                  uiConfig={uiConfig}
-                  firebaseAuth={firebase.auth()}
-                />
-              }
-            </Grid>
-          </Grid>
-        :
-        <StyledFirebaseAuth
-          uiConfig={uiConfig}
-          firebaseAuth={firebase.auth()}
-        />
+          <div className='home-grid'>
+            <div className='hg-left'>
+              <Sidebar photo={this.state.currentUser.photoURL}/>
+            </div>
+            <div className='hg-right'>
+              <p className='home-quip'>dashboard</p>
+            </div>
+          </div>
+          :
+          <div className='home-login'>
+            <h1 className='home-title font-effect-3d-float'>ottoPlan</h1>
+            <p className='home-quip'>Reducing decision fatigue!</p>
+            <Button onClick={this.popupSignIn} variant='outline-light' className='home-btn'>Login with Google</Button>
+          </div>
         }
       </div>
     );
