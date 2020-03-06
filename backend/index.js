@@ -131,6 +131,7 @@ app.post('/schedule_event', asyncHandler(async (req, res) => {
                 res.json(event_info);
             })
             .catch(err => {
+                console.log('Sending failure back to frontend...');
                 res.json(err);
             })
     });
@@ -306,8 +307,8 @@ async function getOwnBusy(auth, own_cal_ids, all_busy, request_data) {
 
                     console.log('Calling findWindow\n');
                     findWindow(auth, all_busy, request_data)
-                        .then(function(event) {
-                            //console.log('getOwnBusy event: ' + JSON.stringify(event, null, 2));
+                        .then(event => {
+                            console.log('getOwnBusy event: ' + JSON.stringify(event, null, 2));
                             resolve(event);
                         })
                         .catch(err => {
@@ -321,96 +322,7 @@ async function getOwnBusy(auth, own_cal_ids, all_busy, request_data) {
             }).catch(err => {
                 reject('Error contacting Calendar API: ' + err);
             });
-    
-    /* TODO: remove all this once it's definitely useless
-        var own_events = [];
-        // Honestly, I don't understand why 'i' makes everything work, but it does.
-        // I tried replacing it with 'key', but that made everything blow up
-        var i = 0;
-        for (var key in Object.keys(own_cal_ids)) {
-            //console.log('(in loop) Calendar: ' + JSON.stringify(own_cal_ids[key], null, 2), '\n');
-
-
-            calendar.events.list({
-                calendarId: own_cal_ids[key],
-                //timeMin: (new Date()).toISOString(),
-                //TODO: after getting form to send the correct JSON, update these
-                //timeMin: request_data.scheduling_info.start.dateTime,
-                timeMin: request_data.start_time,
-                // TODO: End of time window
-                //timeMax: request_data.scheduling_info.end.dateTime,
-                timeMax: request_data.end_time,
-                //maxResults: 10,
-                singleEvents: true,
-                orderBy: 'startTime',
-
-                // TODO: add relevant events to a list to cross-reference
-            }, (err, res) => {
-                //console.log('i = ' + i + '; Object.keys(own_cal_ids).length = ' + Object.keys(own_cal_ids).length, '\n');
-                if (err) {
-                    //return console.log('The API returned an error: ' + err, '\n');
-                    reject('The API returned an error: ' + err);
-                }
-                const events = res.data.items;
-
-                if (events.length) {
-                    //console.log('Upcoming events betweeen ' + request_data.scheduling_info.start.dateTime + ' and ' + request_data.scheduling_info.end.dateTime + ':');
-                    //console.log('Upcoming events betweeen ' + request_data.start_time + ' and ' + request_data.end_time + ':');
-                    events.map((event, key) => {
-                        own_events.push(event);
-                        //const start = event.start.dateTime || event.start.date;
-                        //const end = event.end.dateTime || event.end.date;
-                        //console.log(`${start}-${end} - ${event.summary}\n`);
-                    });
-                } else {
-                    //console.log('No upcoming events found.\n');
-                }
-
-                i++;
-                // Call next function when all calendars iterated through
-                if (i == Object.keys(own_cal_ids).length) {
-                    console.log('Calling createEvent...\n');
-
-                    /*
-                    // If DNE, populate with already-sorted first calendar
-                    if (!Array.isArray(all_busy)) {
-                        all_busy = [];
-                        all_busy.concat(own_cal_ids);
-                    }
-                    /* Sort all_busy
-                     * Compares 
-                     * Compare times in unixTime format
-                     */
-                    // TODO: verify that it's safe to use Date.parse() in the backend
-                    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/parse
-                    /*
-                    else {
-                        // TODO: do this for merge list
-                        //var all_busy = function(all_busy, own_cal_ids) {
-
-                    }
-                    */
-        /*
-                    
-                    // TODO: adjust this function call which doesn't need 'own_events'
-                    createEvent(auth, own_events, request_data)
-                        .then(function(event) {
-                            //console.log('getOwnBusy event: ' + JSON.stringify(event, null, 2));
-                            resolve(event);
-                        })
-                        .catch(err => {
-                            reject(err);
-                        })
-                }
-            });
-        }
-        */
     });
-
-    // Add info for time to schedule the event
-    //request_data[eventStart] = 
-    //request_data[eventEnd] = 
-
 }
 async function findWindow(auth, all_busy, request_data) {
     return new Promise(function(resolve, reject) {
@@ -421,41 +333,72 @@ async function findWindow(auth, all_busy, request_data) {
         // Start at beginning of request_data.start_time request.data.work_time
         // Don't look for times outside of working hours (and in the future outside of working days)
         var search_start = parseDate(request_data.start_time);
+        console.log('Pre-loop search start: ' + search_start + '; typeof: ' + typeof search_start + '\n');
         // TODO: implement working hours
         //var day_end = 
         var i = 0;
+        var time_found = false;
         console.log('in findWindow\n');
 
+        //TODO: HERE THIS SHIT it's creating too many events and 
+        //END TIME IS NOT CORRECT; it's not adding the ms at all
         while (i < all_busy.length) {
 
-            if (gapOkay(search_start, all_busy[i].start, duration)) {
-                console.log('findWindow calling createEvent\n');
+            // Available meeting time found
+            if (gapOkay(search_start, parseDate(all_busy[i].start), duration)) {
+                
                 // CALL CREATE_EVENT
-                request_data.event_start = search_start;
-                // set end time based on start time and duration
+                request_data.event_start = ISODateString(search_start);
+                console.log('request_data.event_start: ' + request_data.event_start);
+
                 var end_time = new Date();
-                end_time = parseDate(request_data.start_event) + toMSec(duration);
-                request_data.event_end = end_time.toISOString();
+                //console.log('typeof: ' + typeof end_time);
+                end_time.setTime(search_start.getTime() + toMSec(duration));
+                
+                //console.log('end_time + ms = ' + end_time + '; typeof: ' + typeof end_time);
 
-                createEvent(auth, request_data)
-                    .then(function(event) {
-                        //console.log('getOwnBusy event: ' + JSON.stringify(event, null, 2));
-                        resolve(event);
-                    })
-                    .catch(err => {
-                        reject(err);
-                    })
+                request_data.event_end = ISODateString(end_time);
+                console.log('request_data.event_end: ' + request_data.event_end + '\n');
 
+                console.log('findWindow calling createEvent\n');
+
+                time_found = true;
+                break;
             }
+
+            // Keep looking for available meeting time
             else {
-                search_start = all_busy[i].end;
+                search_start = all_busy[i++].end;
             }
-
-            i++;
         }
-        
-        reject('No available times found');
+
+        if (time_found) {
+            createEvent(auth, request_data)
+                .then(function(event) {
+                    //console.log('getOwnBusy event: ' + JSON.stringify(event, null, 2));
+                    resolve(event);
+                })
+                .catch(err => {
+                    reject(err);
+                })
+        }
+        else {
+            reject('No available time found');
+        }
     });
+    console.log('Ending findWindow...\n');
+}
+
+/* https://stackoverflow.com/a/7244288
+ * use a function for the exact format desired... */
+function ISODateString(d){
+     function pad(n){return n<10 ? '0'+n : n}
+     return d.getUTCFullYear()+'-'
+          + pad(d.getUTCMonth()+1)+'-'
+          + pad(d.getUTCDate())+'T'
+          + pad(d.getUTCHours())+':'
+          + pad(d.getUTCMinutes())+':'
+          + pad(d.getUTCSeconds())+'Z'
 }
 
 async function createEvent(auth, request_data) {
@@ -570,30 +513,6 @@ function parseDate(rfc_in) {
     return date;
 }
 
-/*
-// TODO: change this to read the given RFC time instead of converting
-// Given two times, returns true if time1 is earlier than time2
-function startsEarlier(time1, time2) {
-    
-    //if(parseDate(time1) <= parseDate(time2)) {
-    var time1_obj = parseDate(time1);
-    var time2_obj = parseDate(time2);
-
-    if (parseInt(time1_obj.year) <= parseInt(time2_obj.year) 
-        && parseInt(time1_obj.month) <= parseInt(time2_obj.month) 
-        && parseInt(time1_obj.day) <= parseInt(time2_obj.day)
-        && parseInt(time1_obj.hour) <= parseInt(time2_obj.hour)
-        && parseInt(time1_obj.min) <= parseInt(time2_obj.min)
-        && parseInt(time1_obj.sec) <= parseInt(time2_obj.sec))
-
-        return true;
-    }
-    else {
-        return false;
-    }
-}
-*/
-
 // Given a length of time in 00h:00m format, return length in milliseconds
 function toMSec(duration) {
     var split_dur = duration.split(':');
@@ -620,48 +539,6 @@ function gapOkay(end_first, start_next, duration) {
         //console.log('gapNotOkay; length = ' + Math.abs(end_first - start_next) + '; duration(ms) = ' + dur_time + '\n');
         return false;
     }
-    /*
-
-    var dur_split = duration.split(':');
-    var dur_hour = dur_split[0];
-    var dur_min = dur_split[1];
-
-    var end_obj = parseDate(end_first);
-    var start_obj = parseDate(start_next);
-
-    // If the day the previous event ends is earlier than the day the next event begins, return true
-    // TODO: build handling for multi-day events eventually?
-    if (parseInt(end_obj.year) <= parseInt(start_obj.year) 
-        && parseInt(end_obj.month) <= parseInt(start_obj.year)
-        && parseInt(end_obj.day) < parseInt(start_obj.day)) {
-        return true;
-    }
-    if (parseInt(end_obj.year) == parseInt(start_obj.year) 
-        && parseInt(end_obj.month) == parseInt(start_obj.year)
-        && parseInt(end_obj.day) == parseInt(start_obj.day)) {
-        var gap_hr = parseInt(start_obj.hour) - parseInt(end_obj.hour);
-        var gap_min = parseInt(start_obj.min) - parseInt(end_obj.min);
-
-        // If gap length hours < duration hours, definitely shorter
-        if (gap_hr < dur_hour) {
-            return true;
-        }
-        else if (gap_hr == dur_hour && gap_
-        var gap_min = parseInt(start_obj.min) - parseInt(start_obj.min);
-        var gap_length = (gap_hr * 60)
-
-    gap_length = Date.parse(end_first) - Date.parse(start_next);
-    //gap_length = parseDate(end_first) - parseDate(start_next);
-    console.log('gap_length: ' + gap_length + '\n');
-    //dur_sec = toSec(duration);
-
-    if (dur_sec >= gap_length) {
-        return true;
-    }
-    else {
-        return false;
-    }
-    */
 }
 
 /* Merges user's busy times into all_busy
@@ -838,54 +715,10 @@ function merge_busy(all_busy, user_busy, duration) {
         */
         new_busy = new_busy.concat(all_busy.slice(i));
     }
-    /*
-        // If a busy1 starts after busy2 and ends before busy2, discard busy1
-        if (startsEarlier(all_busy[i].start_time, user_busy.start_time) && startsEarlier(all_busy[i].end_
-        
-        // Determine where to place event
-        if (startsEarlier(all_busy[i].start_time, user_busy[j].start_time) {
-
-        // Case 1: busy windows don't overlap
-        // Check if new available window < duration
-        // If not, add new busy window
-        // Else edit existing busy window to include new event AND too-short gap
-        if (startsEarlier(all_busy[i].end_time, user_busy[j].start_time))
-        
-        // Case 2: One event is engulfed by the other
-        // Store only the engulfing event
-        
-        // Case 3: busy windows overlap
-        // Longer event absorbs the other event to result in a single event that covers both busy times
-        // Check if length between preceeding and following busy times is < duration
-        // If gap < duration, events are combined into one to include the too-short gap
-
-        if (compare_date(all_busy[i], user_busy[j]) > 0) {
-            new_busy.push(user_busy[j++]);
-        } else {
-            new_busy.push(all_busy[i++]);
-        }
-    }
-
-
-    // If user_busy still has elements, concatenate them to the end of the new all busy array
-    if (j < user_busy.length) {
-        new_busy = new_busy.concat(user_busy.slice(j));
-    } else {
-        new_busy = new_busy.concat(all_busy.slice(i));
-    }
-    */
 
     //console.log('endOf merge_busy new_busy: ' + JSON.stringify(new_busy, null, 2) + '\n');
     return new_busy;
 }
-
-/* Compares the start/end dates of 2 event objects
- * If startTime are the same, 
-function compare_date(date1, date2) {
-    if (
-    return a - b;
-}
- */
 
 /* No longer creating ottoPlan calendar
  * Use of this would require changing scope from 'https://www.googleapis.com/auth/calendar.events' to 'https://www.googleapis.com/auth/calendar.events'
