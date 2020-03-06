@@ -52,6 +52,9 @@ async function authorize(credentials, callback, request_data) {
                     //console.log('authorize event_info: ' + JSON.stringify(event_info, null, 2) + '\n');
                     resolve(event_info);
                 })
+                .catch(err => {
+                    reject(err);
+                })
         });
     });
 }
@@ -126,7 +129,10 @@ app.post('/schedule_event', asyncHandler(async (req, res) => {
                 //console.log('post event_info: ' + JSON.stringify(event_info, null, 2) + '\n');
                 console.log('Sending event_info back to frontend...');
                 res.json(event_info);
-            });
+            })
+            .catch(err => {
+                res.json(err);
+            })
     });
 
 }));
@@ -289,22 +295,29 @@ async function getOwnBusy(auth, own_cal_ids, all_busy, request_data) {
 
 
                 if (all_busy.length > 1) {
-                    request_data.event_start = all_busy[0].end_time;
-                    request_data.event_end = all_busy[1].start_time;
+
+                    // TODO: extract the correct start time for the event
+                    // add the duration to get the end time
+                    // TODO: account for time zones
+                    //request_data.work_start
+                    //request_data.work_end
+                    //request_data.event_start = all_busy[0].end;
+                    //request_data.event_end = all_busy[1].start;
+
+                    console.log('Calling findWindow\n');
+                    findWindow(auth, all_busy, request_data)
+                        .then(function(event) {
+                            //console.log('getOwnBusy event: ' + JSON.stringify(event, null, 2));
+                            resolve(event);
+                        })
+                        .catch(err => {
+                            reject(err);
+                        })
+                }
+                else {
+                    reject('No available times found.');
                 }
 
-                resolve("ok");
-                /*
-                createEvent(auth, request_data)
-                    .then(function(event) {
-                        //console.log('getOwnBusy event: ' + JSON.stringify(event, null, 2));
-                        resolve(event);
-                    })
-                    .catch(err => {
-                        reject(err);
-                    })
-                    */
-                
             }).catch(err => {
                 reject('Error contacting Calendar API: ' + err);
             });
@@ -398,6 +411,51 @@ async function getOwnBusy(auth, own_cal_ids, all_busy, request_data) {
     //request_data[eventStart] = 
     //request_data[eventEnd] = 
 
+}
+async function findWindow(auth, all_busy, request_data) {
+    return new Promise(function(resolve, reject) {
+        // TODO: extract the correct start time for the event
+        // add the duration to get the end time
+        // TODO: account for time zones
+
+        // Start at beginning of request_data.start_time request.data.work_time
+        // Don't look for times outside of working hours (and in the future outside of working days)
+        var search_start = parseDate(request_data.start_time);
+        // TODO: implement working hours
+        //var day_end = 
+        var i = 0;
+        console.log('in findWindow\n');
+
+        while (i < all_busy.length) {
+
+            if (gapOkay(search_start, all_busy[i].start, duration)) {
+                console.log('findWindow calling createEvent\n');
+                // CALL CREATE_EVENT
+                request_data.event_start = search_start;
+                // set end time based on start time and duration
+                var end_time = new Date();
+                end_time = parseDate(request_data.start_event) + toMSec(duration);
+                request_data.event_end = end_time.toISOString();
+
+                createEvent(auth, request_data)
+                    .then(function(event) {
+                        //console.log('getOwnBusy event: ' + JSON.stringify(event, null, 2));
+                        resolve(event);
+                    })
+                    .catch(err => {
+                        reject(err);
+                    })
+
+            }
+            else {
+                search_start = all_busy[i].end;
+            }
+
+            i++;
+        }
+        
+        reject('No available times found');
+    });
 }
 
 async function createEvent(auth, request_data) {

@@ -122,10 +122,20 @@ export default class App extends React.Component {
           <label htmlFor="attendees">Attendee Info:</label>
           <input text="text" name="email" value='ewong012@ucr.edu'/>
           <input text="text" name="email" value=''/><br/><br/>
+          {/* TODO: change start_time and end_time to just dates and accomodate in ./backend/index.js accordingly */}
           <label htmlFor="start_time">Start of Time Window</label>
           <input text="text" name="start_time" value="2020-02-16T20:00:00-05:00"/>
-          <label htmlFor="end_time">Start of Time Window</label>
-          <input text="text" name="end_time" value="2020-02-22T20:00:00-09:00"/>
+          <label htmlFor="end_time">End of Time Window</label>
+          <input text="text" name="end_time" value="2020-02-22T20:00:00-09:00"/><br/><br/>
+          <label htmlFor="work_start">Start of Working Hours</label>
+          <input text="text" name="work_start" value="09:00"/>
+          <label htmlFor="work_end">End of Working Hours</label>
+          <input text="text" name="work_end" value="17:00"/><br/><br/>
+          {/* TODO: add non-working days (weekends) */}
+          <label htmlFor="duration">Meeting Duration</label>
+          <input text="text" name="duration" value="01:00"/><br/><br/>
+          <label htmlFor="time_zone">Time Zone</label>
+          <input text="text" name="time_zone" value="PST"/><br/><br/>
           <input type="submit" value="submit" />
         </form>
         <Event />
