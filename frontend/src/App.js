@@ -14,7 +14,8 @@ export default class App extends React.Component {
 
     this.state = {
       isAuthenticated: false,
-      currentUser: null
+      currentUser: null,
+      searchEmail: null
     };
   }
 
@@ -34,6 +35,33 @@ export default class App extends React.Component {
         });
       }
     });
+  }
+
+  updateEmail = event => {
+    // console.log(event.target.value);
+    this.setState({searchEmail: event.target.value});
+  }
+
+  onSubmit = async event => {
+    console.log('Calling backend');
+    await backend.searchUserByEmail(this.state.searchEmail).then(result => {
+      console.log('Result: ', result);
+      console.log('size: ', result.length);
+      result.forEach(doc => {
+        console.log(doc.id, '=> ', doc.data());
+      });
+      // if (result.length == 0) {
+      //   console.log('No results.');
+      // }
+      // else {
+      //   result.forEach(doc => {
+      //     console.log(doc.id, '=> ', doc.data());
+      //   });
+      // }
+    }).catch(error => {
+      console.log('Error getting documents: ', error);
+    });
+    console.log('finished');
   }
 
   popupSignIn = () => {
@@ -58,7 +86,12 @@ export default class App extends React.Component {
               <Sidebar photo={this.state.currentUser.photoURL}/>
             </div>
             <div className='hg-right'>
-              <p className='home-quip'>dashboard</p>
+              {/* <form onSubmit={this.onSubmit}>
+                <label>Email: */}
+                  <input type='text' name='name'onChange={this.updateEmail}/>
+                  <button onClick={this.onSubmit}>Click Me</button>
+                {/* </label>
+              </form> */}
             </div>
           </div>
           :
