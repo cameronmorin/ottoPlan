@@ -49,7 +49,7 @@ async function authorize(credentials, callback, request_data) {
             // Call scheduling function chain
             callback(oAuth2Client, request_data)
                 .then(event_info => {
-                    //console.log('authorize event_info: ' + JSON.stringify(event_info) + '\n');
+                    //console.log('authorize event_info: ' + JSON.stringify(event_info, null, 2) + '\n');
                     resolve(event_info);
                 })
         });
@@ -94,7 +94,7 @@ function getAccessToken(oAuth2Client, callback) {
             if (err) return console.error('Error retrieving access token', err);
             oAuth2Client.setCredentials(token);
             // Store the token to disk for later program executions
-            fs.writeFile(TOKEN_PATH, JSON.stringify(token), (err) => {
+            fs.writeFile(TOKEN_PATH, JSON.stringify(token, null, 2), (err) => {
                 if (err) return console.error(err);
                 console.log('Token stored to', TOKEN_PATH, '\n');
             });
@@ -110,7 +110,7 @@ app.listen(port, () => console.log(`Server started on port ${port}\n`));
 // Send back JSON scheduling response to frontend
 // Utilizes a chain of functions that call each other
 app.post('/schedule_event', asyncHandler(async (req, res) => {
-    console.log('req.body: ' + JSON.stringify(req.body) + '\n');
+    console.log('req.body: ' + JSON.stringify(req.body, null, 2) + '\n');
 
     // Load client secrets from a local file.
     fs.readFile('credentials.json', (err, content) => {
@@ -123,7 +123,7 @@ app.post('/schedule_event', asyncHandler(async (req, res) => {
         // Need auth for each attendee in order to access calendars/events for each
         authorize(JSON.parse(content), scheduleEvent, req.body)
             .then(event_info => {
-                //console.log('post event_info: ' + JSON.stringify(event_info) + '\n');
+                //console.log('post event_info: ' + JSON.stringify(event_info, null, 2) + '\n');
                 console.log('Sending event_info back to frontend...');
                 res.json(event_info);
             });
@@ -136,15 +136,15 @@ app.post('/schedule_event', asyncHandler(async (req, res) => {
  */
 // TODO: remove this if unnecessary OR utilize it to manage multiple users' calendars
 async function scheduleEvent(auth, request_data) {
-    //console.log('request_data: ' + JSON.stringify(request_data), '\n');
+    //console.log('request_data: ' + JSON.stringify(request_data, null, 2), '\n');
     //console.log('request_data.start_time: ' + request_data.start_time, '\n');
 
     // TODO: use all_busy
-    var all_busy = {};
+    var all_busy = []; 
     return new Promise( (resolve, reject) => {
         getOwnCal(auth, all_busy, request_data)
             .then(event_info => {
-                //console.log('scheduleEvent event_info: ' + JSON.stringify(event_info) + '\n');
+                //console.log('scheduleEvent event_info: ' + JSON.stringify(event_info, null, 2) + '\n');
                 resolve(event_info);
             })
             .catch(err => {
@@ -163,7 +163,7 @@ async function scheduleEvent(auth, request_data) {
 // (expectation is that these will be events that they must actually attend)
 // Receives request_data to pass on to next function called
 async function getOwnCal(auth, all_busy, request_data) {
-    console.log('getOwnCal request_data: ' + JSON.stringify(request_data) + '\n');
+    console.log('getOwnCal request_data: ' + JSON.stringify(request_data, null, 2) + '\n');
     const calendar = google.calendar({version: 'v3', auth});
 
     return new Promise( (resolve, reject) => {
@@ -193,7 +193,7 @@ async function getOwnCal(auth, all_busy, request_data) {
 
                 getOwnBusy(auth, own_cal_ids, all_busy, request_data)
                     .then(event_info => {
-                        //console.log('\ngetOwnCal event_info: ' + JSON.stringify(event_info) + '\n');
+                        //console.log('\ngetOwnCal event_info: ' + JSON.stringify(event_info, null, 2) + '\n');
                         resolve(event_info);
                     })
                     .catch(err => {
@@ -220,10 +220,10 @@ async function getOwnBusy(auth, own_cal_ids, all_busy, request_data) {
     */
 
     console.log('Fetching user\'s busy times from Calendar API...\n');
-    //console.log('own_cal_ids: ' + own_cal_ids + '\n');
+    //console.log('own_cal_ids: ' + JSON.stringify(own_cal_ids, null, 2) + '; typeof: ' + typeof own_cal_ids + '\n');
     //console.log('request_data.start_time' + request_data.start_time, '\n');
     //console.log('request_data.end_time' + request_data.end_time, '\n');
-    //console.log('request_data: ' + JSON.stringify(request_data), '\n');
+    //console.log('request_data: ' + JSON.stringify(request_data, null, 2), '\n');
 
     return new Promise( (resolve, reject) => {
         calendar.freebusy.query({
@@ -243,21 +243,67 @@ async function getOwnBusy(auth, own_cal_ids, all_busy, request_data) {
             }
         })
             .then(busy_times => {
-                console.log('Response from Calendar API: ' + JSON.stringify(busy_times) + '\n');
+                console.log('Response from Calendar API: ' + JSON.stringify(busy_times, null, 2) + '\n');
                 duration = "01:00";
+                var user_busy = [];
+
+                /* busy_times comes back as a response body that contains each calendar's busy times as a list of objects with start and end
+                 * The lists of busy times needs to be merged into user_busy
+                 * user_busy populated by merging each calendar's list of busy times one by one
+                 */
+                // Each calendar's events must be pre-processed to remove too-short gaps
+                var cal_busy = [];
+                var i;
+                for(i = 0; i < own_cal_ids.length; i++) {
+                    var curr_id = own_cal_ids[i].id;
+                    //console.log('curr_id: ' + curr_id + '\n');
+                    //console.log('busy_times.data: ' + JSON.stringify(busy_times.data, null, 2) + '\n');
+                    //console.log('busy_times.data.calendars: ' + JSON.stringify(busy_times.data.calendars, null, 2) + '\n');
+                    //console.log('busy_times.data.calendars[curr_id]: ' + JSON.stringify(busy_times.data.calendars[curr_id], null, 2) + '\n');
+                    //console.log('busy_times.data.calendars[curr_id].busy: ' + JSON.stringify(busy_times.data.calendars[curr_id].busy, null, 2) + '\n');
+                    if (busy_times.data.calendars[curr_id].busy.length > 0) {
+                        cal_busy = [];
+                        console.log('pre-processing for ' + curr_id + '\n');
+                        cal_busy = merge_busy(cal_busy, busy_times.data.calendars[curr_id].busy, duration);
+                        console.log('cal_busy[' + curr_id + ' = ' + i + ']: ' + JSON.stringify(cal_busy, null, 2) + '\n');
+                        user_busy = merge_busy(user_busy, cal_busy, duration);
+                    }
+                    //console.log('user_busy after[' + curr_id + ' = ' + i + ']: ' + JSON.stringify(user_busy, null, 2) + '\n');
+                    /*
+                    for (int j = 0; j < busy_times.data.calendars.busy.length; j++) {
+                        user_busy.push(
+                    var busy_slot = {
+                        'start_time': busy_times.data.calendars[i].busy.start, 
+                        'end_time': busy_times.data.calendars[i].busy.end
+                    }
+                    user_busy.push(busy_slot);
+                    */
+                }
+                console.log('COMPLETE user_busy: ' + JSON.stringify(user_busy, null, 2) + '\n');
+
 
                 // TODO: this
                 // Merge user busy_times with all_busy and return the new all_busy
-                all_busy = merge_busy(all_busy, busy_times, duration);
+                all_busy = merge_busy(all_busy, user_busy, duration);
+                console.log('getOwnBusy all_busy: ' + JSON.stringify(all_busy, null, 2) + '\n');
 
+
+                if (all_busy.length > 1) {
+                    request_data.event_start = all_busy[0].end_time;
+                    request_data.event_end = all_busy[1].start_time;
+                }
+
+                resolve("ok");
+                /*
                 createEvent(auth, request_data)
                     .then(function(event) {
-                        //console.log('getOwnBusy event: ' + JSON.stringify(event));
+                        //console.log('getOwnBusy event: ' + JSON.stringify(event, null, 2));
                         resolve(event);
                     })
                     .catch(err => {
                         reject(err);
                     })
+                    */
                 
             }).catch(err => {
                 reject('Error contacting Calendar API: ' + err);
@@ -269,7 +315,7 @@ async function getOwnBusy(auth, own_cal_ids, all_busy, request_data) {
         // I tried replacing it with 'key', but that made everything blow up
         var i = 0;
         for (var key in Object.keys(own_cal_ids)) {
-            //console.log('(in loop) Calendar: ' + JSON.stringify(own_cal_ids[key]), '\n');
+            //console.log('(in loop) Calendar: ' + JSON.stringify(own_cal_ids[key], null, 2), '\n');
 
 
             calendar.events.list({
@@ -336,7 +382,7 @@ async function getOwnBusy(auth, own_cal_ids, all_busy, request_data) {
                     // TODO: adjust this function call which doesn't need 'own_events'
                     createEvent(auth, own_events, request_data)
                         .then(function(event) {
-                            //console.log('getOwnBusy event: ' + JSON.stringify(event));
+                            //console.log('getOwnBusy event: ' + JSON.stringify(event, null, 2));
                             resolve(event);
                         })
                         .catch(err => {
@@ -369,12 +415,14 @@ async function createEvent(auth, request_data) {
         description: request_data.description,
         start: {
             //dateTime: request_data.scheduling_info.start.dateTime,
-            dateTime: request_data.start_time,
+            //dateTime: request_data.start_time,
+            dateTime: request_data.event_start,
             //timeZone: 'America/Los_Angeles'
             //timeZone: request_data.scheduling_info.time_zone
         },
         end: {
-            dateTime: request_data.end_time,
+            //dateTime: request_data.end_time,
+            dateTime: request_data.event_end,
             //timeZone: 'America/Los_Angeles'
             // timeZone: request_data.scheduling_info.time_zone
         },
@@ -421,7 +469,7 @@ async function createEvent(auth, request_data) {
                 console.log('Event created: %s', created_event.data.htmlLink, '\n');
 
                 //created_event.success = "true";
-                //console.log('createEvent event: ' + JSON.stringify(created_event), '\n');
+                //console.log('createEvent event: ' + JSON.stringify(created_event, null, 2), '\n');
 
                 console.log('createEvent returning success...\n');
                 resolve(created_event);
@@ -430,52 +478,124 @@ async function createEvent(auth, request_data) {
     });
 }
 
-// Replaces Date.parse() to convert RFC3339 format date/time to unix timestamp
-// https://stackoverflow.com/a/11318669
+// Convert RFC 3339 format string into object to parse more easily
 function parseDate(rfc_in) {
-    console.log('rfc_in: ' + rfc_in);
+    // Example rfc_in: 2020-02-22T01:00:00Z
+    //console.log('rfc_in: ' + rfc_in);
 
-    var m = googleDate.exec(d);
-    var year   = +m[1];
-    var month  = +m[2];
-    var day    = +m[3];
-    var hour   = +m[4];
-    var minute = +m[5];
-    var second = +m[6];
-    var msec   = +m[7];
-    var tzHour = +m[8];
-    var tzMin  = +m[9];
-    var tzOffset = new Date().getTimezoneOffset() + tzHour * 60 + tzMin;
-    var new_date = new Date(year, month - 1, day, hour, minute - tzOffset, second, msec);
+    var date = new Date();
+    var split_rfc = rfc_in.split('T');
 
-    console.log('unix timestamp: ' + new_date + '\n');
-    return new_date;
+    // Split date into year, month, day
+    var split_date = split_rfc[0].split('-');
+
+    // Removes 'Z' from end
+    var time = split_rfc[1].replace('Z', "");
+    time = time.split(':');
+
+    date.setUTCFullYear(parseInt(split_date[0]));
+    // months are from 0-11 NOT THE MORE INTUITIVE 1-12
+    date.setUTCMonth(parseInt(split_date[1]) - 1);
+    //date_obj.month = split_date[1];
+
+    // date doesn't start at 0
+    date.setUTCDate(parseInt(split_date[2]));
+    //date_obj.day = split_date[2];
+    date.setUTCHours(parseInt(time[0]));
+    //date_obj.hour = time[0];
+    date.setUTCMinutes(parseInt(time[1]));
+    //date_obj.min = time[1];
+    date.setUTCSeconds(parseInt(time[2]));
+    //date_obj.sec = time[2];
+
+    //console.log('date: ' + date.toUTCString() + '\n');
+    return date;
 }
 
+/*
+// TODO: change this to read the given RFC time instead of converting
 // Given two times, returns true if time1 is earlier than time2
 function startsEarlier(time1, time2) {
-    if(parseDate(time1) <= parseDate(time2)) {
+    
+    //if(parseDate(time1) <= parseDate(time2)) {
+    var time1_obj = parseDate(time1);
+    var time2_obj = parseDate(time2);
+
+    if (parseInt(time1_obj.year) <= parseInt(time2_obj.year) 
+        && parseInt(time1_obj.month) <= parseInt(time2_obj.month) 
+        && parseInt(time1_obj.day) <= parseInt(time2_obj.day)
+        && parseInt(time1_obj.hour) <= parseInt(time2_obj.hour)
+        && parseInt(time1_obj.min) <= parseInt(time2_obj.min)
+        && parseInt(time1_obj.sec) <= parseInt(time2_obj.sec))
+
         return true;
     }
     else {
         return false;
     }
 }
+*/
 
-// Given a length of time in 00h:00m format, return length in seconds
-function toSec(duration) {
-    var secs = duration.hr * 3600;
-    secs += duration.min * 60;
-    return secs;
+// Given a length of time in 00h:00m format, return length in milliseconds
+function toMSec(duration) {
+    var split_dur = duration.split(':');
+    var hour = parseInt(split_dur[0]);
+    var min = parseInt(split_dur[1]);
+
+    var millisec = hour * 60 * 60 * 1000;
+    millisec += min * 60 * 1000;
+
+    return millisec;
 }
 
 // Given an end time, start time, and a duration return true if gap is >= duration
 // Convert times to unix timestamp and get their difference (given in s)
 // Convert duration to s and compare; if duration >= difference, return true
 function gapOkay(end_first, start_next, duration) {
-    gap_length = parseDate(end_first) - parseDate(start_next);
+    var dur_time = toMSec(duration);
+
+    if (Math.abs(end_first - start_next) >= dur_time) {
+        //console.log('gapOkay; length = ' + Math.abs(end_first - start_next) + '; duration(ms) = ' + dur_time + '\n');
+        return true;
+    }
+    else {
+        //console.log('gapNotOkay; length = ' + Math.abs(end_first - start_next) + '; duration(ms) = ' + dur_time + '\n');
+        return false;
+    }
+    /*
+
+    var dur_split = duration.split(':');
+    var dur_hour = dur_split[0];
+    var dur_min = dur_split[1];
+
+    var end_obj = parseDate(end_first);
+    var start_obj = parseDate(start_next);
+
+    // If the day the previous event ends is earlier than the day the next event begins, return true
+    // TODO: build handling for multi-day events eventually?
+    if (parseInt(end_obj.year) <= parseInt(start_obj.year) 
+        && parseInt(end_obj.month) <= parseInt(start_obj.year)
+        && parseInt(end_obj.day) < parseInt(start_obj.day)) {
+        return true;
+    }
+    if (parseInt(end_obj.year) == parseInt(start_obj.year) 
+        && parseInt(end_obj.month) == parseInt(start_obj.year)
+        && parseInt(end_obj.day) == parseInt(start_obj.day)) {
+        var gap_hr = parseInt(start_obj.hour) - parseInt(end_obj.hour);
+        var gap_min = parseInt(start_obj.min) - parseInt(end_obj.min);
+
+        // If gap length hours < duration hours, definitely shorter
+        if (gap_hr < dur_hour) {
+            return true;
+        }
+        else if (gap_hr == dur_hour && gap_
+        var gap_min = parseInt(start_obj.min) - parseInt(start_obj.min);
+        var gap_length = (gap_hr * 60)
+
+    gap_length = Date.parse(end_first) - Date.parse(start_next);
+    //gap_length = parseDate(end_first) - parseDate(start_next);
     console.log('gap_length: ' + gap_length + '\n');
-    dur_sec = toSec(duration);
+    //dur_sec = toSec(duration);
 
     if (dur_sec >= gap_length) {
         return true;
@@ -483,6 +603,7 @@ function gapOkay(end_first, start_next, duration) {
     else {
         return false;
     }
+    */
 }
 
 /* Merges user's busy times into all_busy
@@ -491,31 +612,45 @@ function gapOkay(end_first, start_next, duration) {
 function merge_busy(all_busy, user_busy, duration) {
     var new_busy = [], i = 0, j = 0;
 
-    console.log('all_busy: ' + all_busy + '\n');
-    console.log('user_busy: ' + user_busy + '\n');
+    //console.log('merge_busy all_busy: ' + JSON.stringify(all_busy, null, 2) + '\n');
+    //console.log('merge_busy user_busy: ' + JSON.stringify(user_busy, null, 2) + '\n');
+
+    var dur_time = new Date();
+
 
     while (i < all_busy.length && j < user_busy.length) {
 
+        var all_busy_start = parseDate(all_busy[i].start);
+        var all_busy_end = parseDate(all_busy[i].end);
+        var user_busy_start = parseDate(user_busy[j].start);
+        var user_busy_end = parseDate(user_busy[j].end);
+
         // all_busy[i] starts before or at same time as user_busy[j]
-        if (startsEarlier(all_busy[i].start_time, user_busy[j].start_time)) {
+        if (all_busy_start < user_busy_start) {
+        //if (startsEarlier(all_busy[i].start, user_busy[j].start)) {
             
             // Case 1: busy windows don't overlap
-            // Check that all_busy[i].end_time is before or at same time as user_busy[j].start_time
-            if (startsEarlier(all_busy[i].end_time, user_busy[j].start_time)) {
+            // Check that all_busy[i].end is before or at same time as user_busy[j].start
+            if (all_busy_end < user_busy_start) {
+            //if (startsEarlier(all_busy[i].end, user_busy[j].start)) {
                 
                 // If gap between times is >= duration, push all_busy[i]
                 // (Don't push user_busy[j] yet; need to check if it overlaps with next all_busy event first)
-                if (gapOkay(all_busy[i].end_time, user_busy[j].start_time, duration)) {
-                    console.log('Available slot from ' + all_busy[i].end_time + ' to ' + user_busy[j].start_time + '\n');
+                if (gapOkay(all_busy_end, user_busy_start, duration)) {
+                    //console.log('Gap ok; \n\tall_busy_end = ' + all_busy_end);
+                    //console.log('\tuser_busy_start = ' + user_busy_start + '\n');
                     new_busy.push(all_busy[i++]);
-                    //TODO: return here so don't have to parse entirety of both arrays
                 }
 
                 // Gap is not long enough; combine busy periods into element with later end time
                 // Increment earlier end time array 
                 // Don't push combined event yet in case overlaps with next event
                 else {
-                    all_busy[i].end_time = user_busy[j++].end_time;
+                    //console.log('Gap not ok; \n\tall_busy_end = ' + all_busy[i].end);
+                    //console.log('\tuser_busy[j].end = ' + user_busy[j].end);
+                    all_busy[i].end = user_busy[j++].end;
+                    //console.log('new all_busy[j].end = ' + all_busy[i].end + '\n');
+
                     //new_busy.push(all_busy[i++]);
                 }
             }
@@ -527,10 +662,16 @@ function merge_busy(all_busy, user_busy, duration) {
             //  (This is in case there is a series of overlapping events; the one that ends later cannot be from the same array as the next overlapping event)
             else {
                 // all_busy[i] starts before or at same time as user_busy[j]
-                // Determine which end_time is later
-                if (startsEarlier(all_busy[i].end_time, user_busy[j].end_time)) {
+                // Determine which end is later
+                if (all_busy_end < user_busy_end) {
+                //if (startsEarlier(all_busy[i].end, user_busy[j].end)) {
                     // user_busy ends later; edit start time and increment all_busy
-                    user_busy[j].start_time = all_busy[i++].start_time;
+                    //console.log('periods overlap\n\tuser_busy[j].start = ' + user_busy_start);
+                    //console.log('\tall_busy[i].start = ' + all_busy[i].start);
+
+                    user_busy[j].start = all_busy[i++].start;
+
+                    //console.log('new user_busy[j].start = ' + user_busy[j].start + '\n');
                 }
 
                 // all_busy[i] starts earlier and ends later; discard user_busy[j]
@@ -544,22 +685,28 @@ function merge_busy(all_busy, user_busy, duration) {
         // user_busy[j] starts before or at same time as all_busy[i]
         else {
             // Case 1: busy windows don't overlap
-            // Check that user_busy[j].end_time is before or at same time as all_busy[i].start_time 
-            if (startsEarlier(user_busy[j].end_time, all_busy[i].start_time)) {
+            // Check that user_busy[j].end is before or at same time as all_busy[i].start
+            if (user_busy_end < all_busy_start) {
+            //if (startsEarlier(user_busy[j].end, all_busy[i].start)) {
                 
                 // If gap between times is >= duration, push user_busy[j]
                 // (Don't push all_busy[i] yet; need to check if it overlaps with next all_busy event first)
-                if (gapOkay(user_busy[j].start_time, all_busy[i].end_time, duration)) {
-                    console.log('Available slot from ' + user_busy[j].end_time + ' to ' + all_busy[i].start_time + '\n');
+                if (gapOkay(user_busy_start, all_busy_end, duration)) {
+                //if (gapOkay(user_busy[j].start, all_busy[i].end, duration)) {
+                    //console.log('Available slot from ' + user_busy[j].end + ' to ' + all_busy[i].start + '\n');
+                    //console.log('Gap ok; \n\tuser_busy[j].end = ' + user_busy[j].end);
+                    //console.log('\tall_busy[i].end = ' + all_busy[i].end + '\n');
                     new_busy.push(user_busy[j++]);
-                    //TODO: return here so don't have to parse entirety of both arrays
                 }
 
                 // Gap is not long enough; combine busy periods into element with later end time
                 // Increment earlier end time array 
                 // Don't push combined event yet in case overlaps with next event
                 else {
-                    user_busy[j].end_time = all_busy[i++].end_time;
+                    //console.log('Gap not ok; \n\tuser_busy[j].end = ' + user_busy[j].end);
+                    //console.log('\tall_busy[i].end = ' + all_busy[i].end);
+                    user_busy[j].end = all_busy[i++].end;
+                    //console.log('new user_busy[j].end = ' + user_busy[j].end + '\n');
                 }
             }
             
@@ -570,15 +717,22 @@ function merge_busy(all_busy, user_busy, duration) {
             //  (This is in case there is a series of overlapping events; the one that ends later cannot be from the same array as the next overlapping event)
             else {
                 // user_busy[j] starts before or at same time as all_busy[i] 
-                // Determine which end_time is later
-                if (startsEarlier(user_busy[j].end_time, all_busy[i].end_time)) {
+                // Determine which end is later
+                //console.log('periods overlap\n\tuser_busy[j].end = ' + user_busy[j].end);
+                //console.log('\tall_busy[i].end = ' + all_busy[i].end);
+
+                if (user_busy_end < all_busy_end) {
+                //if (startsEarlier(user_busy[j].end, all_busy[i].end)) {
                     // all_busy ends later; edit start time and increment user_busy
-                    all_busy[i].start_time = user_busy[j++].start_time;
+
+                    all_busy[i].start = user_busy[j++].start;
+                    //console.log('new all_busy[i].start = ' + all_busy[i].start + '\n');
                 }
 
                 // user_busy[j] starts earlier and ends later; discard all_busy[i] 
                 else {
                     i++;
+                    //console.log('fully engulfed; no changes\n');
                 }
             }
         }
@@ -586,14 +740,25 @@ function merge_busy(all_busy, user_busy, duration) {
 
     // If either array still has elements, remove too-short gaps and push
     if (j < user_busy.length) {
+
         while (j < user_busy.length - 1) {
-            if (gapOkay(user_busy[j].end_time, user_busy[j + 1].start_time, duration)) {
+            var user_busy_start = parseDate(user_busy[j].start);
+            var user_busy_end = parseDate(user_busy[j].end);
+            var next_busy_start = parseDate(user_busy[j + 1].start);
+
+            if (gapOkay(user_busy_end, next_busy_start, duration)) {
+            //if (gapOkay(user_busy[j].end, user_busy[j + 1].start, duration)) {
+                //console.log('Gap ok; \n\tuser_busy_end = ' + user_busy_end);
+                //console.log('\tnext_start = ' + next_busy_start + '\n');
+
                 new_busy.push(user_busy[j++]);
             }
             else {
                 // consolidate the events and discard the first
                 // Don't push second yet; must check for sufficient gap length
-                user_busy[j + 1].start_time = user_busy[j].start_time;
+                //console.log('Gap not ok; \n\tuser_busy_end = ' + user_busy_end);
+                //console.log('\tnext_busy_start = ' + next_busy_start + '\n');
+                user_busy[j + 1].start = user_busy[j].start;
                 j++;
             }
         }
@@ -652,7 +817,7 @@ function merge_busy(all_busy, user_busy, duration) {
     }
     */
 
-    console.log('new_busy: ' + new_busy + '\n');
+    //console.log('endOf merge_busy new_busy: ' + JSON.stringify(new_busy, null, 2) + '\n');
     return new_busy;
 }
 
