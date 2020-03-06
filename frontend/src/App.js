@@ -1,102 +1,116 @@
 import React from 'react';
-import logo from './logo.svg';
-import './style/App.css';
-
 import firebase from 'firebase';
-import firebaseConfig from './service/fconfig';
-import StyledFirebaseAuth from 'react-firebaseui/StyledFirebaseAuth';
+import './style/App.css';
+import backend from './service/firebase';
+import {Button} from 'react-bootstrap';
 
-import Sidebar from './Sidebar';
-import HomeIcon from '@material-ui/icons/Home';
-import SettingsIcon from '@material-ui/icons/Settings';
-import FriendIcon from '@material-ui/icons/People';
-import AccountIcon from '@material-ui/icons/AccountBox';
-import SignoutIcon from '@material-ui/icons/ExitToApp';
-import EventIcon from '@material-ui/icons/Event';
-import NotifIcon from '@material-ui/icons/Notifications';
-import UnreadIcon from '@material-ui/icons/NotificationImportant';
-
-const uiConfig = {
-  signInFlow: 'popup',
-  signInOptions: [
-    firebase.auth.GoogleAuthProvider.PROVIDER_ID
-  ],
-  callbacks: {
-    signInSuccess: () => false
-  }
-};
-
-const items = [
-  { name: 'home', label: 'Home', Icon: HomeIcon},
-  { name: 'friends', label: 'Friends', Icon: FriendIcon},
-  { name: 'create event', label: 'Create Event', Icon: EventIcon},
-  { name: 'notifications', label: 'Notifications', Icon: unread ? UnreadIcon : NotifIcon},
-  { 
-    name: 'settings', 
-    label: 'Settings',
-    Icon: SettingsIcon,
-    items: [
-             {name: 'account', label: 'Account', Icon: AccountIcon},
-             {name: 'sign out', label: 'Sign Out', Icon: SignoutIcon},
-           ],
-  },
-]
-
-var unread = false;
+import Sidebar from './components/Sidebar';
 
 export default class App extends React.Component {
   constructor(props) {
     super(props);
+    
+    this.db = firebase.firestore();
+
     this.state = {
       isAuthenticated: false,
-      currentUser: null
+      currentUser: null,
+      show: false,
+      setShow: false
     };
   }
 
   componentDidMount = () => {
     firebase.auth().onAuthStateChanged(user => {
-      this.setState({
-        isAuthenticated: !!user
-      });
-      
       // Update state user object
       if (user) {
-        this.setState({currentUser: user.providerData[0]});
-        // Check if user is in DB
+        this.setState({
+          isAuthenticated: true,
+          currentUser: user.providerData[0]
+        });
       }
       else {
-        this.setState({currentUser: null});
+        this.setState({
+          isAuthenticated: false,
+          currentUser: null
+        });
       }
     });
   }
 
-  componentDidUpdate = () => {
-    if (!this.state.isAuthenticated) {
-      console.log('Redirecting to sign in...');
-    }
+  updateEmail = event => {
+    // console.log(event.target.value);
+    this.setState({searchEmail: event.target.value});
+  }
+
+  onSubmit = async event => {
+    console.log('Calling backend');
+    await backend.searchUserByEmail(this.state.searchEmail).then(result => {
+      console.log('Result: ', result);
+      console.log('size: ', result.length);
+      result.forEach(doc => {
+        console.log(doc.id, '=> ', doc.data());
+      });
+      // if (result.length == 0) {
+      //   console.log('No results.');
+      // }
+      // else {
+      //   result.forEach(doc => {
+      //     console.log(doc.id, '=> ', doc.data());
+      //   });
+      // }
+    }).catch(error => {
+      console.log('Error getting documents: ', error);
+    });
+    console.log('finished');
+  }
+
+  popupSignIn = () => {
+    var GoogleProvider = new firebase.auth.GoogleAuthProvider();
+    GoogleProvider.addScope('https://www.googleapis.com/auth/calendar.events');
+    GoogleProvider.addScope('https://www.googleapis.com/auth/calendar.readonly');
+    firebase.auth().signInWithPopup(GoogleProvider).then(result => {
+      console.log('Succes!\n', result);
+      backend.saveUser(result.additionalUserInfo.profile.id);
+    }).catch(error => {
+      console.log('Error signing in.');
+      console.log(error);
+    });
+  }
+  signOut = () => {
+    firebase.auth().signOut().then(() => {
+      console.log('Sign out successful.');
+      window.location.reload();
+    }).catch(error => {
+      console.log('Error signing out: ', error);
+    });
   }
 
   render() {
     return (
-      <>
-      <div className="Menu">
-        {this.state.isAuthenticated ? <Sidebar items={items}/> : null}
-      </div>
-      <div className="App-header">
-        {this.state.isAuthenticated ? 
-          <>
-            <img alt="profile picture" src={firebase.auth().currentUser.photoURL} style={{ height: "50px", width: "50px", borderRadius: "50%", position: "absolute", left: "10px", top: "15px"}}/>
-            <p>Hello, {firebase.auth().currentUser.displayName}!</p>
-            {/* <button onClick={() => firebase.auth().signOut()}>Sign Out!</button>  */}
-          </>
-          : 
-          <StyledFirebaseAuth
-            uiConfig={uiConfig}
-            firebaseAuth={firebase.auth()}
-          />
+      <div className='App'>
+        {this.state.isAuthenticated ?
+          <div className='home-grid'>
+            <div className='hg-left'>
+              <Sidebar photo={this.state.currentUser.photoURL} signOut={this.signOut}/>
+            </div>
+            <div className='hg-right'>
+              {/* <form onSubmit={this.onSubmit}>
+                <label>Email: */}
+                  <input type='text' name='name'onChange={this.updateEmail}/>
+                  <button onClick={this.onSubmit}>Click Me</button>
+                {/* </label>
+              </form> */}
+            </div>
+          </div>
+          :
+          <div className='home-login'>
+            <h1 className='home-title font-effect-3d-float'>ottoPlan</h1>
+            <p className='home-quip'>Reducing decision fatigue!</p>
+            <Button onClick={this.popupSignIn} variant='outline-light' className='home-btn'>Login with Google</Button>
+          </div>
         }
       </div>
-      </>
     );
   }
 }

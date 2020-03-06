@@ -1,0 +1,42 @@
+.sidebar {
+  width: 100%;
+  padding: 10px 0;
+}
+
+.sidebar-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sidebar-item-stuff {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.sidebar-item-icon {
+  margin-right: 10px;
+}
+
+.sidebar-subitem-text {
+  width: 100%;
+  font-size: calc(10px + 2vmin);
+}
+
+.sidebar-item-text {
+  font-family: 'Montserrat';
+}
+
+.expand-arrow {
+  font-size: 1.2rem !important;
+  margin-left: 10px;
+}
+
+.profile-pic {
+  width: 50px;
+  height: 50px;
+  border: 2px solid #282c34;
+  border-radius: 50%;
+  margin: auto;
+}
