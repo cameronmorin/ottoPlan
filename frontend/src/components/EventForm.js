@@ -1,12 +1,9 @@
-//pull timezone form browser
-//check google limits for summary length
-
 import React from 'react'
 import '../style/App.css';
 
-import TextInput from '../TextInput';
-import validate from '../validation';
-import Select from '../SelectOption';
+import TextInput from './TextInput';
+import validate from './validation';
+import Select from './SelectOption';
 
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";

@@ -1,5 +1,5 @@
 import React from 'react';
-import './style/App.css';
+import '../style/App.css';
 
 const TextInput = props => {
     let formControl = "form-control";

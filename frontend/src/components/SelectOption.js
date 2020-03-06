@@ -1,5 +1,5 @@
 import React from 'react'
-import './style/App.css'
+import '../style/App.css'
 
 const Select = props => {
     let formControl = 'form-control'
