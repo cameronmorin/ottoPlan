@@ -187,7 +187,7 @@ class EventForm extends React.Component {
 
         data.schedule_info["start_date"] = this.state.startDate;
         data.schedule_info["end_date"] = this.state.endDate;
-        data.schedule_info["timezone"] = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        data.schedule_info["timezone"] = this.state.formControls["timezone"].value;
 
         //event info
         alert(JSON.stringify(data, null, 2));

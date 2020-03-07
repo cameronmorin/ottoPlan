@@ -51,7 +51,8 @@ function SidebarItem({ depthStep = 10, depth = 0, expanded, item, ...rest }) {
   
     return (
       <>
-        <Modal show={show} onHide={handleClose}>
+        {/* backdrop="static" supposed to prevent clicking out, but not working for some reason*/}
+        <Modal backdrop="static" show={show} onHide={handleClose}>
             <Modal.Header closeButton>
               <Modal.Title>Create an Event</Modal.Title>
             </Modal.Header>
