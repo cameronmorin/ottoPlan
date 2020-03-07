@@ -25,5 +25,10 @@ const searchUserByEmail = async searchEmail => {
   return db.collection('users').where('email', '==', searchEmail).get();
 }
 
+const searchUserByName = async searchName => {
+  var db = firebase.firestore();
+  return db.collection('users').where('displayName', '==', searchName).get();
+}
 
-export default { saveUser, searchUserByEmail };
+
+export default { saveUser, searchUserByEmail, searchUserByName };
