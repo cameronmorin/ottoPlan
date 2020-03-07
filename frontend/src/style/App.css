@@ -44,7 +44,8 @@
   display: flex;
   grid-column: 1 span 1;
   background-color: #f9dc5c;
-  color: #282c34;
+  display: flex;
+  color: hsl(220, 13%, 18%);
 }
 
 .hg-right {

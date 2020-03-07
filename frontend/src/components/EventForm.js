@@ -25,7 +25,6 @@ class EventForm extends React.Component {
             formControls: {
                 summary: {
                     value: '',
-                    initVal: 'Summary of the event',
                     valid: false,
                     touched: false,
                     validationRules: {
@@ -35,7 +34,6 @@ class EventForm extends React.Component {
                 },
                 location: {
                     value: '',
-                    initVal: 'Location of event',
                     valid: true,
                     touched: false,
                     validationRules: {
@@ -63,8 +61,7 @@ class EventForm extends React.Component {
                     from: 'event'     
                 },
                 event_duration: {
-                    value: '',
-                    initVal: 'Select a duration for the event',
+                    value: 'Select a duration for the event',
                     valid: false,
                     touched: false,
                     validationRules: {
@@ -85,8 +82,7 @@ class EventForm extends React.Component {
                 },
 
                 timezone: {
-                    value: '',
-                    initVal: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    value: Intl.DateTimeFormat().resolvedOptions().timeZone,
                     valid: true,
                     touched: false,
                     validationRules: {
@@ -216,7 +212,7 @@ class EventForm extends React.Component {
                     maxTime={max}
                     timeFormat="hh:mm aa"
                     timeIntervals={15}
-                    timeCaption="time"
+                    timeCaption="Time"
                     dateFormat="MMMM d, yyyy h:mm aa"    
                     placeholderText="Select a starting date/time"
                 />
@@ -225,11 +221,13 @@ class EventForm extends React.Component {
                     selected={this.state.endDate} 
                     onChange={this.changeEndHandler}
                     inline
+                    showMonthDropdown
+                    showYearDropdown
                     showTimeSelect
                     minTime={min}
                     maxTime={max}
                     timeIntervals={15}
-                    timeCaption="time"
+                    timeCaption="Time"
                     timeFormat="hh:mm aa"
                     dateFormat="MMMM d, yyyy h:mm aa"    
                     placeholderText="Select an ending date/time"
