@@ -83,6 +83,27 @@ class EventForm extends React.Component {
                     from: 'schedule',
                     duration: { hr: '', min: ''},
                 },
+
+                timezone: {
+                    value: '',
+                    initVal: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    valid: true,
+                    touched: false,
+                    validationRules: {
+                        isRequired: false,
+                    },
+                    options: [
+                        {value: "America/Chicago", display: 'America/Chicago'},
+                        {value: "America/Denver", display: 'America/Denver'},
+                        {value: "America/Detroit", display: 'America/Detroit'},
+                        {value: "America/Indiana", display: 'America/Indiana'},
+                        {value: "America/Kentucky", display: 'America/Kentucky'},
+                        {value: "America/Los_Angeles", display: 'America/Los_Angeles'},
+                        {value: "America/New_York", display: 'America/New_York'},
+                        {value: "America/Phoenix", display: 'America/Phoenix'},
+                    ],
+                    from: 'schedule',
+                }
             },
 
             startDate: new Date(2020, 0, 26, 9),
@@ -182,6 +203,7 @@ class EventForm extends React.Component {
                 <TextInput name="attendees" initVal = {this.state.formControls.attendees.initVal} value={this.state.formControls.attendees.value} onChange={this.changeHandler} valid={this.state.formControls.attendees.valid} touched={this.state.formControls.attendees.touched}/>
                 {/*schedule_info
                    TODO: fix format (grid?), add validation for dates*/}
+                <Select name="timezone" initVal = {this.state.formControls.timezone.initVal} value={this.state.formControls.timezone.value} onChange={this.changeHandler} valid={this.state.formControls.timezone.valid} touched={this.state.formControls.timezone.touched} options={this.state.formControls.timezone.options}/>
                 <label>Start Date</label>
                 <DatePicker 
                     selected={this.state.startDate} 
