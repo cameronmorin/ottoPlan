@@ -191,8 +191,9 @@ class EventForm extends React.Component {
 
     render () {
         return (
-            <div>
+            <div className="event-form">
                 {/*event_info*/}
+                <label className="form-title">Create an Event</label>
                 <TextInput name="summary" initVal = {this.state.formControls.summary.initVal} value={this.state.formControls.summary.value} onChange={this.changeHandler} valid={this.state.formControls.summary.valid} touched={this.state.formControls.summary.touched}/>
                 <TextInput name="location" initVal = {this.state.formControls.location.initVal} value={this.state.formControls.location.value} onChange={this.changeHandler} valid={this.state.formControls.location.valid} touched={this.state.formControls.location.touched}/>
                 <TextInput name="description" initVal = {this.state.formControls.description.initVal} value={this.state.formControls.description.value} onChange={this.changeHandler} valid={this.state.formControls.description.valid} touched={this.state.formControls.description.touched}/>

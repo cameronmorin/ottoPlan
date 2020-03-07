@@ -48,11 +48,19 @@
   color: hsl(220, 13%, 18%);
 }
 
-.hg-right {
+.hg-center {
   display: flex;
   grid-column: 2 span 1;
   align-items: center;
   justify-content: center;
+}
+
+.hg-right {
+  display: flex;
+  grid-column: 3;
+  align-items: center;
+  justify-content: center;
+  overflow-y: scroll;
 }
 
 .form-control {
@@ -63,4 +71,15 @@
 
 .control-error {
   border: 1px solid red;
+}
+
+.form-title {
+  font-size: calc(10px + 2vmin);
+}
+
+.event-form {
+  font-family: 'Montserrat';
+  background-color: #f9dc5c;
+  color: hsl(220, 13%, 18%);
+  padding: 10px;
 }
