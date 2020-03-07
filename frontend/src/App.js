@@ -4,6 +4,7 @@ import './style/App.css';
 import backend from './service/firebase';
 
 import Sidebar from './components/Sidebar';
+import SearchResults from './components/SearchResults';
 import { Button } from 'react-bootstrap';
 
 export default class App extends React.Component {
@@ -15,7 +16,8 @@ export default class App extends React.Component {
     this.state = {
       isAuthenticated: false,
       currentUser: null,
-      searchEmail: null
+      searchBox: null,
+      searchResults: null
     };
   }
 
@@ -39,17 +41,20 @@ export default class App extends React.Component {
 
   updateEmail = event => {
     // console.log(event.target.value);
-    this.setState({searchEmail: event.target.value});
+    this.setState({searchBox: event.target.value});
   }
 
   onSubmit = async event => {
     console.log('Calling backend');
-    await backend.searchUserByEmail(this.state.searchEmail).then(result => {
+    await backend.searchUserByName(this.state.searchBox).then(result => {
       console.log('Result: ', result);
       console.log('size: ', result.length);
+      var docs = [];
       result.forEach(doc => {
         console.log(doc.id, '=> ', doc.data());
+        docs.push(doc.data());
       });
+      this.setState({searchResults: docs});
       // if (result.length == 0) {
       //   console.log('No results.');
       // }
@@ -98,6 +103,7 @@ export default class App extends React.Component {
                 <label>Email: */}
                   <input type='text' name='name'onChange={this.updateEmail}/>
                   <button onClick={this.onSubmit}>Click Me</button>
+                  <SearchResults results={this.state.searchResults}/>
                 {/* </label>
               </form> */}
             </div>
