@@ -30,5 +30,65 @@ const searchUserByName = async searchName => {
   return db.collection('users').where('displayName', '==', searchName).get();
 }
 
+const addContact = async (currentID, newID) => {
+  var db = firebase.firestore();
+  const userDoc = db.collection('users').doc(currentID);
+  
+  var updatedContacts = [];
+  const data = (await userDoc.get()).data();
 
-export default { saveUser, searchUserByEmail, searchUserByName };
+  if (data.contacts) {
+    for (let i = 0; i < data.contacts.length; ++i) {
+      if (data.contacts[i] !== newID) {
+        updatedContacts.push(data.contacts[i]);
+      }
+    }
+  }
+  updatedContacts.push(newID);
+
+  await userDoc.set({
+    contacts: updatedContacts
+  }, {merge: true}).then(async () => {
+    return (await returnContacts(currentID));
+  });
+}
+
+const removeContact = async (currentID, removeID) => {
+  var db = firebase.firestore();
+  const userDoc = db.collection('users').doc(currentID);
+
+  var updatedContacts = [];
+  const data = (await userDoc.get()).data();
+
+  if (data.contacts) {
+    for (let i = 0; i < data.contacts.length; ++i) {
+      if (data.contacts[i] !== removeID) {
+        updatedContacts.push(data.contacts[i]);
+      }
+    }
+  }
+
+  await userDoc.set({
+    contacts: updatedContacts
+  }, {merge: true}).then(async () => {
+    return (await returnContacts(currentID));
+  });
+  
+}
+
+const returnContacts = async userId => {
+  var db = firebase.firestore();
+  const userDoc = db.collection('users').doc(userId);
+  const userData = (await userDoc.get()).data();
+
+  var contactObjects = [];
+  if (userData.contacts) {
+    for (let i = 0; i < userData.contacts.length; ++i) {
+      const currContact = (await db.collection('users').doc(userData.contacts[i]).get()).data();
+      contactObjects.push(currContact);
+    }
+  }
+  return contactObjects;
+}
+
+export default { saveUser, searchUserByEmail, searchUserByName, addContact, removeContact, returnContacts };
