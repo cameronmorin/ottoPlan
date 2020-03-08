@@ -3,7 +3,7 @@ import '../style/App.css';
 
 import TextInput from './TextInput';
 import validate from './validation';
-import Select from './SelectOption';
+import SelectOption from './SelectOption';
 
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -46,7 +46,6 @@ class EventForm extends React.Component {
                 },
                 description: {
                     value: '',
-                    initVal: 'Description of event',
                     valid: true,
                     touched: false,
                     validationRules: {
@@ -64,45 +63,44 @@ class EventForm extends React.Component {
                     from: 'event'     
                 },
                 event_duration: {
-                    value: 'Select a duration for the event',
+                    value: '',
                     valid: false,
                     touched: false,
                     validationRules: {
                         isRequired: true
                     },
                     options: [
-                        {value: '15', display: '15 minutes'},
-                        {value: '30', display: '30 minutes'},
-                        {value: '45', display: '45 minutes'},
-                        {value: '60', display: '1 hour'},
-                        {value: '75', display: '1 hour 15 minutes '},
-                        {value: '90', display: '1 hour 30 minutes'},
-                        {value: '105', display: '1 hour 45 minutes'},
-                        {value: '120', display: '2 hours'},
+                        {value: '15', label: '15 minutes'},
+                        {value: '30', label: '30 minutes'},
+                        {value: '45', label: '45 minutes'},
+                        {value: '60', label: '1 hour'},
+                        {value: '75', label: '1 hour 15 minutes '},
+                        {value: '90', label: '1 hour 30 minutes'},
+                        {value: '105', label: '1 hour 45 minutes'},
+                        {value: '120', label: '2 hours'},
                     ],
                     from: 'schedule',
                     duration: { hr: '', min: ''},
                 },
-
                 timezone: {
-                    value: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    value: '',
                     valid: true,
                     touched: false,
                     validationRules: {
                         isRequired: false,
                     },
                     options: [
-                        {value: "America/Chicago", display: 'America/Chicago'},
-                        {value: "America/Denver", display: 'America/Denver'},
-                        {value: "America/Detroit", display: 'America/Detroit'},
-                        {value: "America/Indiana", display: 'America/Indiana'},
-                        {value: "America/Kentucky", display: 'America/Kentucky'},
-                        {value: "America/Los_Angeles", display: 'America/Los_Angeles'},
-                        {value: "America/New_York", display: 'America/New_York'},
-                        {value: "America/Phoenix", display: 'America/Phoenix'},
+                        {value: "America/Chicago", label: 'America/Chicago'},
+                        {value: "America/Denver", label: 'America/Denver'},
+                        {value: "America/Detroit", label: 'America/Detroit'},
+                        {value: "America/Indiana", label: 'America/Indiana'},
+                        {value: "America/Kentucky", label: 'America/Kentucky'},
+                        {value: "America/Los_Angeles", label: 'America/Los_Angeles'},
+                        {value: "America/New_York", label: 'America/New_York'},
+                        {value: "America/Phoenix", label: 'America/Phoenix'},
                     ],
                     from: 'schedule',
-                }
+                },
             },
 
             startDate: new Date(2020, 0, 26, 9),
@@ -123,6 +121,7 @@ class EventForm extends React.Component {
         };
 
         updatedFormElement.value = value;
+        updatedFormElement.valid = validate(this.state.formControls.value, this.state.formControls.validationRules)
 
         updatedControls[name] = updatedFormElement;
 
@@ -166,9 +165,9 @@ class EventForm extends React.Component {
             }
         }
         //set form's validity for error layout of inputs
-        this.setState({formValid: formValid});
         
         if(formValid === false) {
+        this.setState({formValid: formValid});
             this.setState({ showError: true });
         }
         else {  //populate JSON for backend
@@ -210,7 +209,7 @@ class EventForm extends React.Component {
                 <TextInput name="attendees" initVal = {this.state.formControls.attendees.initVal} value={this.state.formControls.attendees.value} onChange={this.changeHandler} valid={this.state.formControls.attendees.valid} formValid={this.state.formValid}/>
                 {/*schedule_info
                    TODO: fix format (grid?), add validation for dates*/}
-                <Select name="timezone" initVal = {this.state.formControls.timezone.initVal} value={this.state.formControls.timezone.value} onChange={this.changeHandler} valid={this.state.formControls.timezone.valid} formValid={this.state.formValid} options={this.state.formControls.timezone.options}/>
+                <SelectOption name="timezone" onChange={this.changeHandler} valid={this.state.formControls.timezone.valid} formValid={this.state.formValid} options={this.state.formControls.timezone.options} default={this.state.formControls.timezone.default}/>
                 <label>Start Date</label>
                 <DatePicker 
                     // selected={this.state.startDate} 
@@ -243,7 +242,7 @@ class EventForm extends React.Component {
                     dateFormat="MMMM d, yyyy h:mm aa"    
                     placeholderText="Select an ending date/time"
                 />
-                <Select name="event_duration" initVal= {this.state.formControls.event_duration.initVal} hr={this.state.formControls.event_duration.duration.hr} min={this.state.formControls.event_duration.duration.min} onChange={this.changeHandler} display={this.state.formControls.event_duration.display} valid={this.state.formControls.event_duration.valid} formValid={this.state.formValid} options={this.state.formControls.event_duration.options}/>
+                <SelectOption name="event_duration" hr={this.state.formControls.event_duration.duration.hr} min={this.state.formControls.event_duration.duration.min} onChange={this.changeHandler} label={this.state.formControls.event_duration.label} valid={this.state.formControls.event_duration.valid} formValid={this.state.formValid} options={this.state.formControls.event_duration.options} default={this.state.formControls.event_duration.default}/>
             
                 <button onClick={this.formSubmitHandler} > Submit </button>
             </div>

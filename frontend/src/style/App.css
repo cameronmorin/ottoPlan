@@ -56,16 +56,17 @@
 }
 
 .hg-right {
-  display: flex;
-  grid-column: 3;
+  /* display: flex; */
+  grid-column: 2 span 1;
   align-items: center;
   justify-content: center;
+  width: 100%
 }
 
 .form-control {
   width: 100%;
-  border: 1px solid#ccc;
-  padding: 1px;
+  /* border: 1px solid#ccc; */
+  /* padding: 1px; */
 }
 
 .control-error {
@@ -78,8 +79,8 @@
 
 .event-form {
   font-family: 'Montserrat';
-  background-color: #f9dc5c;
-  color: hsl(220, 13%, 18%);
+  background-color: #282c34;
+  color: #f9dc5c;
   padding: 10px;
   max-height: 100vh;
   overflow-y: scroll;

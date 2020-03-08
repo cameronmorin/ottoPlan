@@ -1,7 +1,8 @@
 import React from 'react'
 import '../style/App.css'
+import Select from 'react-select'
 
-const Select = props => {
+const SelectOption = props => {
     let formControl = 'form-control'
     let showError = false;
 
@@ -18,12 +19,13 @@ const Select = props => {
             <label>{label}</label> 
             {showError ? <label  style={{ color: 'red', fontSize: '10px'}}>&nbsp;&nbsp;&nbsp;*Required</label> : null}
             <select className={formControl} value={props.value} onChange={props.onChange} name={props.name}>
+                <option disabled hidden selected> Select an option... </option>
                 {props.options.map(option => (
-                    <option value={option.value}> {option.display} </option>
+                    <option value={option.value}> {option.label} </option>
                 ))}
             </select>
         </div>
     );
 }
 
-export default Select;
+export default SelectOption;

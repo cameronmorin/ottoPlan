@@ -95,16 +95,7 @@ export default class App extends React.Component {
             <div className='hg-left'>
               <Sidebar photo={this.state.currentUser.photoURL} signOut={this.signOut}/>
             </div>
-            <div className='hg-center'>
-              {/* <form onSubmit={this.onSubmit}>
-                <label>Email: */}
-                  <input type='text' name='name'onChange={this.updateEmail}/>
-                  <button onClick={this.onSubmit}>Click Me</button>
-                {/* </label>
-              </form> */}
-            </div>
             <div className='hg-right'>
-              {/* TODO: fix scrolling/height issues */}
               <EventForm />
             </div>
           </div>
