@@ -1,26 +1,15 @@
-.search-results {
-  display: flex;
+.result-grid {
+  display: grid;
+  grid-template: 1fr / 50px 200px 1fr;
   background-color: #ffffff;
   border-radius: 10px;
   margin: 5px;
   padding: 10px;
-  color: #ed254e;
-}
-
-.result-grid {
-  display: grid;
-  grid-template: 1fr / 50px 1fr 1fr;
-  background-color: #ffffff;
-  border-radius: 10px;
-  margin: 10px;
-  padding: 10px;
-  width: 350px;
 }
 
 .result-image {
   display: flex;
   grid-column: 1 span 1;
-  background-color: green;
   height: 50px;
   border-radius: 50%;
   margin: auto;
@@ -28,23 +17,30 @@
 
 .result-info {
   grid-column: 2 span 1;
-  display: grid;
-  grid-template: 1fr 1fr / 1fr;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  /* display: grid;
+  grid-template: 1fr 1fr / 1fr; */
   color: #282c34;
-  margin: 0 5px;
+  margin: 0 10px;
 }
 
 .result-info-name {
   display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  grid-row: 1 span 1;
+  margin: 0;
+  /* flex-direction: column;
+  justify-content: flex-end; */
+  /* grid-row: 1 span 1; */
   font-size: 1.5em;
 }
 
 .result-info-email {
   display: flex;
-  grid-row: 2 span 1;
+  margin: 0;
+  word-wrap: anywhere;
+  /* grid-row: 2 span 1; */
   font-size: 1em;
 }
 
