@@ -3,6 +3,54 @@
   background-color: #ffffff;
   border-radius: 10px;
   margin: 5px;
-  padding: 0 2px;
+  padding: 10px;
   color: #ed254e;
+}
+
+.result-grid {
+  display: grid;
+  grid-template: 1fr / 50px 1fr 1fr;
+  background-color: #ffffff;
+  border-radius: 10px;
+  margin: 10px;
+  padding: 10px;
+  width: 350px;
+}
+
+.result-image {
+  display: flex;
+  grid-column: 1 span 1;
+  background-color: green;
+  height: 50px;
+  border-radius: 50%;
+  margin: auto;
+}
+
+.result-info {
+  grid-column: 2 span 1;
+  display: grid;
+  grid-template: 1fr 1fr / 1fr;
+  color: #282c34;
+  margin: 0 5px;
+}
+
+.result-info-name {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  grid-row: 1 span 1;
+  font-size: 1.5em;
+}
+
+.result-info-email {
+  display: flex;
+  grid-row: 2 span 1;
+  font-size: 1em;
+}
+
+.result-button {
+  display: flex;
+  justify-content: flex-end;
+  grid-column: 3 span 1;
+  margin: auto 0;
 }
