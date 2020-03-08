@@ -3,7 +3,7 @@ const app = express();
 const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: false}));
 app.use(bodyParser.json());
-const asyncHandler = require('express-async-handler')
+const asyncHandler = require('express-async-handler');
 
 const port = 5000;
 
@@ -147,7 +147,11 @@ async function scheduleEvent(auth, request_data) {
     //console.log('request_data.start_time: ' + request_data.start_time, '\n');
 
     // TODO: use all_busy
-    var all_busy = []; 
+    console.log('Calling workingHours\n');
+    var all_busy = [];
+    all_busy = workingHours(request_data);
+    console.log('scheduleEvent all_busy after working hours: ' + JSON.stringify(all_busy, null, 2) + '\n');
+
     return new Promise( (resolve, reject) => {
         getOwnCal(auth, all_busy, request_data)
             .then(event_info => {
@@ -332,29 +336,57 @@ async function findWindow(auth, all_busy, request_data) {
 
         // Start at beginning of request_data.start_time request.data.work_time
         // Don't look for times outside of working hours (and in the future outside of working days)
+
+        // Hard-coding saturday and sunday as non-working days
+        // Hard-coding 9-5 as working hours
+
+
+
+
+
+
         var search_start = parseDate(request_data.start_time);
-        console.log('Pre-loop search start: ' + search_start + '; typeof: ' + typeof search_start + '\n');
+        //search_start = new Date(search_start.getTime());
+        //var test_date = new Date(search_start.getTime());
+        //console.log('test_date: ' + test_date + '\tconverted: ' + test_date.toLocaleString("en-US", {timeZone: "America/Los_Angeles"}) + '; typeof: ' + typeof test_date + '\n');
+
+        //console.log('Pre-loop search start: ' + search_start + '; typeof: ' + typeof search_start + '\n');
         // TODO: implement working hours
         //var day_end = 
         var i = 0;
         var time_found = false;
         console.log('in findWindow\n');
 
-        //TODO: HERE THIS SHIT it's creating too many events and 
-        //END TIME IS NOT CORRECT; it's not adding the ms at all
         while (i < all_busy.length) {
+
+            console.log('Loop #' + i + ':\n\tsearch_start: ' + search_start + '\n');
+            console.log('\tsearch_start.getDay(): ' + search_start.getDay() + '\n');
+            console.log('\tsearch_start.getHours(): ' + search_start.getHours() + '\n');
+
+
 
             // Available meeting time found
             if (gapOkay(search_start, parseDate(all_busy[i].start), duration)) {
                 
+                var end_time = new Date();
+                //console.log('typeof: ' + typeof end_time);
+                end_time.setTime(search_start.getTime() + toMSec(duration));
+
+                console.log('end_time.getHours(): ' + end_time.getHours() + '\n');
+                
+                // Check if end_time is outside of working hours
+                if (end_time.getHours() >= 17) {
+                    console.log('Ends outside of working hours: ' + end_time.getHours() + '\n');
+                    search_start = parseDate(all_busy[i++].end);
+                    continue;
+                }
+
+
                 // CALL CREATE_EVENT
                 request_data.event_start = ISODateString(search_start);
                 console.log('request_data.event_start: ' + request_data.event_start);
 
-                var end_time = new Date();
-                //console.log('typeof: ' + typeof end_time);
-                end_time.setTime(search_start.getTime() + toMSec(duration));
-                
+
                 //console.log('end_time + ms = ' + end_time + '; typeof: ' + typeof end_time);
 
                 request_data.event_end = ISODateString(end_time);
@@ -368,7 +400,7 @@ async function findWindow(auth, all_busy, request_data) {
 
             // Keep looking for available meeting time
             else {
-                search_start = all_busy[i++].end;
+                search_start = parseDate(all_busy[i++].end);
             }
         }
 
@@ -479,7 +511,7 @@ async function createEvent(auth, request_data) {
     });
 }
 
-// Convert RFC 3339 format string into object to parse more easily
+// Convert RFC 3339 format string into Date object in UTC
 function parseDate(rfc_in) {
     // Example rfc_in: 2020-02-22T01:00:00Z
     //console.log('rfc_in: ' + rfc_in);
@@ -525,6 +557,114 @@ function toMSec(duration) {
     return millisec;
 }
 
+// Populates an array to block out non-working hours
+// TODO: adjust this to handle time zones (only using user's browser's time zone for now)
+function workingHours(request_data) {
+    console.log('Start of workingHours\n');
+
+    var working_hours = [];
+
+    // Must set milliseconds to 0 otherwise it defaults to some non-zero value
+    var search_start = parseDate(request_data.start_time);
+    search_start.setMilliseconds(0);
+    //console.log('search_start: ' + search_start + '\n');
+    var end_time = new Date(parseDate(request_data.end_time));
+    end_time.setMilliseconds(0);
+
+    //var i = 0;
+    while (new Date(search_start).getTime() < new Date(end_time).getTime()) {
+        /*console.log('-------------------\nwhile loop #' + i + '\n');
+        console.log('search_start: ' + search_start + '\n');
+        console.log('parseDate(request_data.end_time): ' + parseDate(request_data.end_time) + '\n');
+        i++;
+        */
+
+        var nonwork_start = new Date();
+        nonwork_start.setTime(search_start.getTime());
+        var nonwork_end = new Date();
+        nonwork_end.setTime(search_start.getTime());
+
+        // Starting at the start_time date, create blocks of busy time for non-working hours
+        // Create blocks of busy times using non-working days
+        // TODO: adjust this to use user's specifications
+        //
+        // If within Friday after 9am - Sunday, create new busy block until Monday @ 9am or end of search window (whichever is first)
+        console.log('getDay() = ' + search_start.getDay() + '; getHours() = ' + search_start.getHours());
+
+        if (search_start.getDay() == 0 || search_start.getDay() == 6 || (search_start.getDay() == 5 && search_start.getHours() >= 9)) {
+            console.log('Weekend: ' + search_start.getDay() + '\n');
+
+            // If the start of the search window is on a Friday within working hours, set the start of the block to be end of day Friday
+            if (search_start.getDay() == 5 && search_start.getHours() < 17) {
+
+                nonwork_start.setHours(17);
+                nonwork_start.setMinutes(0);
+                nonwork_start.setSeconds(0);
+                nonwork_start.setMilliseconds(0);
+            }
+            //console.log('nonwork_start: ' + nonwork_start.toLocaleString('en-US', {timeZone: 'America/Los_Angeles'}) + '\n');
+
+
+            // Set the end to the next Monday (https://stackoverflow.com/a/33078673)
+            nonwork_end.setDate(search_start.getDate() + ((1 + 7 - search_start.getDay()) % 7));
+            nonwork_end.setHours(9);
+            //console.log('nonwork_end: ' + nonwork_end.toLocaleString('en-US', {timeZone: 'America/Los_Angeles'}) + '\n');
+
+        }
+        // Block out non-working hours of working days (Mon - Thurs)
+        else {
+            console.log('Weekday: ' + search_start.getDay() + '\n');
+            // If the start of the search window is outside of working hours, create a new block until 9am
+            // Don't need to adjust the start of the search window
+            if (search_start.getHours() < 9) {
+                nonwork_end.setHours(9);
+                nonwork_end.setMinutes(0);
+                nonwork_end.setSeconds(0);
+                nonwork_end.setMilliseconds(0);
+            }
+            else {
+                // Set start of window to be 5pm of current day
+                nonwork_start.setHours(17);
+                nonwork_start.setMinutes(0);
+                nonwork_start.setSeconds(0);
+                nonwork_start.setMilliseconds(0);
+
+                // Set end of window to next day
+                nonwork_end.setDate(nonwork_end.getDate() + 1);
+                nonwork_end.setHours(9);
+                nonwork_end.setMinutes(0);
+                nonwork_end.setSeconds(0);
+                nonwork_end.setMilliseconds(0);
+            }
+
+        }
+
+        console.log('Checking if next working day is before end of search window\n');
+
+        // If the next working day is after the end of the search window, just set it to the end of the search window
+        if (nonwork_end > parseDate(request_data.end_time)) {
+            nonwork_end.setTime(end_time.getTime());
+            nonwork_end.setMilliseconds(0);
+        }
+        //console.log('nonwork_start: ' + nonwork_start + '\n');
+        //console.log('nonwork_end: ' + nonwork_end + '\n');
+
+        var block_day = {
+            start: ISODateString(nonwork_start),
+            end: ISODateString(nonwork_end)
+        }
+
+        //console.log('block_day: ' + JSON.stringify(block_day, null, 2) + '\n');
+
+        working_hours.push(block_day);
+        search_start.setTime(nonwork_end.getTime());
+        search_start.setMilliseconds(0);
+    }
+
+    //console.log('working_hours: ' + JSON.stringify(working_hours, null, 2) + '\n');
+    return working_hours;
+}
+
 // Given an end time, start time, and a duration return true if gap is >= duration
 // Convert times to unix timestamp and get their difference (given in s)
 // Convert duration to s and compare; if duration >= difference, return true
@@ -552,6 +692,18 @@ function merge_busy(all_busy, user_busy, duration) {
 
     var dur_time = new Date();
 
+    /*
+            if (search_start.getDay() == 6 || search_start.getDay() == 0) {
+                console.log('Saturday or Sunday: ' + search_start.getDay() + '\n');
+                search_start = parseDate(all_busy[i++].end);
+                continue;
+            }
+            if (search_start.getHours() < 9 || search_start.getHours() >= 17) {
+                console.log('Starts outside of working hours: ' + search_start.getHours() + '\n');
+                search_start = parseDate(all_busy[i++].end);
+                continue;
+            }
+            */
 
     while (i < all_busy.length && j < user_busy.length) {
 
