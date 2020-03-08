@@ -84,13 +84,15 @@ export default class SearchResults extends React.Component {
                     <p className='result-info-email'>{data.email}</p>
                   </div>
                   <div className='result-button'>
-                    {this.props.button}
                     <Button variant='danger' onClick={this.removeContact} id={data.uid}>Remove</Button>
                   </div>
                 </div>
               ))
               :
-              <p>No data to display</p>
+              <>
+                <h1>No data to display <span role='img' aria-labelledby='sad face'>🙁</span></h1>
+                <Button href='/contacts'>Add Contacts</Button>
+              </>
             }
           </>
         }
