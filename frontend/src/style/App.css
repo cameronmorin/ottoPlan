@@ -60,7 +60,6 @@
   grid-column: 3;
   align-items: center;
   justify-content: center;
-  overflow-y: scroll;
 }
 
 .form-control {
@@ -82,4 +81,6 @@
   background-color: #f9dc5c;
   color: hsl(220, 13%, 18%);
   padding: 10px;
+  max-height: 100vh;
+  overflow-y: scroll;
 }
