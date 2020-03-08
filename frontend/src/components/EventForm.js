@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import '../style/App.css';
 
 import TextInput from './TextInput';
@@ -252,7 +252,7 @@ class EventForm extends React.Component {
                 </Modal.Header>
                 <Modal.Body>Please fill out all required fields</Modal.Body>
                 <Modal.Footer>
-                    <Button variant="primary" onClick={this.handleModalClose}>Close</Button>
+                    <Button variant="secondary" onClick={this.handleModalClose}>Close</Button>
                 </Modal.Footer>
             </Modal>
           </>

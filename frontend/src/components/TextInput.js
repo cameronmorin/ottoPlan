@@ -17,7 +17,8 @@ const TextInput = props => {
         <div classname="form-group">
             <label>{label}</label>
             {showError ? <label  style={{ color: 'red', fontSize: '10px'}}>&nbsp;&nbsp;&nbsp;*Required</label> : null}
-            <input type="text" className={formControl} {...props}/>
+            {/* <input type="text" className={formControl} {...props}/> */}
+            <textarea className={formControl} {...props}/> 
         </div>
     );
 }
