@@ -40,9 +40,15 @@
       "last 1 safari version"
     ]
   },
+  "proxy": "http://localhost:5000",
   "devDependencies": {
     "acorn": "^7.1.1",
+    "axios": "^0.19.2",
+    "body-parser": "^1.19.0",
+    "eslint": "^6.8.0",
     "eslint-plugin-flowtype": "^3.13.0",
+    "express": "^4.17.1",
+    "express-async-handler": "^1.1.4",
     "install-peers": "^1.0.3",
     "jquery": "^3.4.1",
     "typescript": "^3.8.3"
