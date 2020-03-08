@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import '../style/App.css';
 
 import TextInput from './TextInput';
@@ -7,6 +7,8 @@ import Select from './SelectOption';
 
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+
+import { Modal, Button } from 'react-bootstrap'
 
 //TODO: find better way to init min/max
 const min = new Date();
@@ -21,6 +23,7 @@ class EventForm extends React.Component {
         super(props);
         this.state={
             formValid: true,
+            showError: false,
             
             formControls: {
                 summary: {
@@ -119,17 +122,11 @@ class EventForm extends React.Component {
             ...updatedControls[name]
         };
 
-        //change value of valid after checking if required
         updatedFormElement.value = value;
-        //updatedFormElement.touched = true;
-        //updatedFormElement.valid = validate(value, updatedFormElement.validationRules);
 
         updatedControls[name] = updatedFormElement;
 
-        this.setState({
-            formControls: updatedControls,
-            // formValid: formValid
-        });
+        this.setState({ formControls: updatedControls });
     }
 
     //handler for calendar selection
@@ -143,6 +140,13 @@ class EventForm extends React.Component {
     changeEndHandler = date => {
         this.setState({
             endDate: date
+        });
+    };
+
+    //handle closing of modal
+    handleModalClose = () => {
+        this.setState({
+            showError: false
         });
     };
 
@@ -165,8 +169,7 @@ class EventForm extends React.Component {
         this.setState({formValid: formValid});
         
         if(formValid === false) {
-            //TODO: add pop-up about required fields
-            alert("Please fill out all required fields");
+            this.setState({ showError: true });
         }
         else {  //populate JSON for backend
             for(let y in this.state.formControls) {
@@ -190,13 +193,14 @@ class EventForm extends React.Component {
             data.schedule_info["end_date"] = this.state.endDate;
             data.schedule_info["timezone"] = this.state.formControls["timezone"].value;  
             
-            //event info
+            //event info to send to backend
             alert(JSON.stringify(data, null, 2));
         }
     }
 
     render () {
         return (
+          <>
             <div className="event-form">
                 {/*event_info*/}
                 <label className="form-title">Create an Event</label>
@@ -243,6 +247,16 @@ class EventForm extends React.Component {
             
                 <button onClick={this.formSubmitHandler} > Submit </button>
             </div>
+            <Modal show={this.state.showError} onHide={this.handleModalClose}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Error</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>Please fill out all required fields</Modal.Body>
+                <Modal.Footer>
+                    <Button variant="primary" onClick={this.handleModalClose}>Close</Button>
+                </Modal.Footer>
+            </Modal>
+          </>
         );
     }
 }
