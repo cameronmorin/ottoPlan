@@ -39,36 +39,6 @@ export default class App extends React.Component {
     });
   }
 
-  updateEmail = event => {
-    // console.log(event.target.value);
-    this.setState({searchBox: event.target.value});
-  }
-
-  onSubmit = async event => {
-    console.log('Calling backend');
-    await backend.searchUserByName(this.state.searchBox).then(result => {
-      console.log('Result: ', result);
-      console.log('size: ', result.length);
-      var docs = [];
-      result.forEach(doc => {
-        console.log(doc.id, '=> ', doc.data());
-        docs.push(doc.data());
-      });
-      this.setState({searchResults: docs});
-      // if (result.length == 0) {
-      //   console.log('No results.');
-      // }
-      // else {
-      //   result.forEach(doc => {
-      //     console.log(doc.id, '=> ', doc.data());
-      //   });
-      // }
-    }).catch(error => {
-      console.log('Error getting documents: ', error);
-    });
-    console.log('finished');
-  }
-
   popupSignIn = () => {
     var GoogleProvider = new firebase.auth.GoogleAuthProvider();
     GoogleProvider.addScope('https://www.googleapis.com/auth/calendar.events');
@@ -99,13 +69,7 @@ export default class App extends React.Component {
               <Sidebar photo={this.state.currentUser.photoURL} signOut={this.signOut}/>
             </div>
             <div className='hg-right'>
-              {/* <form onSubmit={this.onSubmit}>
-                <label>Email: */}
-                  <input type='text' name='name'onChange={this.updateEmail}/>
-                  <button onClick={this.onSubmit}>Click Me</button>
-                  <SearchResults results={this.state.searchResults}/>
-                {/* </label>
-              </form> */}
+              <SearchResults currentUser={this.state.currentUser} />
             </div>
           </div>
           :
