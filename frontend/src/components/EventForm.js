@@ -20,7 +20,7 @@ class EventForm extends React.Component {
     constructor(props) {
         super(props);
         this.state={
-            formValid: false,
+            formValid: true,
             
             formControls: {
                 summary: {
@@ -121,20 +121,14 @@ class EventForm extends React.Component {
 
         //change value of valid after checking if required
         updatedFormElement.value = value;
-        updatedFormElement.touched = true;
-        updatedFormElement.valid = validate(value, updatedFormElement.validationRules);
+        //updatedFormElement.touched = true;
+        //updatedFormElement.valid = validate(value, updatedFormElement.validationRules);
 
         updatedControls[name] = updatedFormElement;
 
-        let formValid = true;
-        for (let x in updatedControls) {
-            //this.setState({formValid: updatedControls[x].valid && formValid});
-            if(updatedControls[x].valid === false) formValid = false;
-        }
-
         this.setState({
             formControls: updatedControls,
-            formValid: formValid
+            // formValid: formValid
         });
     }
 
@@ -158,35 +152,47 @@ class EventForm extends React.Component {
         const schedule_info = {};
         const data = {event_info, schedule_info};
 
-        for(let id in this.state.formControls) {
-            if (this.state.formControls[id].from === 'event') {
-                data.event_info[id] = this.state.formControls[id].value;
+        //check for unfilled required questions
+        let formValid = true;
+        for (let x in this.state.formControls) {
+            this.setState({valid: validate(this.state.formControls.value, this.state.formControls.validationRules)});
+            if(this.state.formControls[x].valid === false) {
+                formValid=false;
+                break;
             }
-            // else {
-            //     data.schedule_info[id] = this.state.formControls[id].value;
-            // }
         }
+        //set form's validity for error layout of inputs
+        this.setState({formValid: formValid});
         
-
-        data.schedule_info["duration"] = {hr: '', min: ''};
-
-        let hour = -1;
-        let val = this.state.formControls["event_duration"].value
-        while (val > 0) {
-            val -= 60;
-            hour += 1;
+        if(formValid === false) {
+            //TODO: add pop-up about required fields
+            alert("Please fill out all required fields");
         }
+        else {  //populate JSON for backend
+            for(let y in this.state.formControls) {
+                if(this.state.formControls[y].from === 'event') {
+                    data.event_info[y] = this.state.formControls[y].value;
+                }
+            }
 
+            data.schedule_info["duration"] = {hr: '', min: ''};
 
-        data.schedule_info["duration"].hr = hour.toString();
-        data.schedule_info["duration"].min = (this.state.formControls["event_duration"].value % 60).toString();
+            let hour = -1;
+            let val = this.state.formControls["event_duration"].value
+            while (val > 0) {
+                val -= 60;
+                hour += 1;
+            }
+            data.schedule_info["duration"].hr = hour.toString();
+            data.schedule_info["duration"].min = (this.state.formControls["event_duration"].value % 60).toString();
 
-        data.schedule_info["start_date"] = this.state.startDate;
-        data.schedule_info["end_date"] = this.state.endDate;
-        data.schedule_info["timezone"] = this.state.formControls["timezone"].value;
-
-        //event info
-        alert(JSON.stringify(data, null, 2));
+            data.schedule_info["start_date"] = this.state.startDate;
+            data.schedule_info["end_date"] = this.state.endDate;
+            data.schedule_info["timezone"] = this.state.formControls["timezone"].value;  
+            
+            //event info
+            alert(JSON.stringify(data, null, 2));
+        }
     }
 
     render () {
@@ -194,16 +200,16 @@ class EventForm extends React.Component {
             <div className="event-form">
                 {/*event_info*/}
                 <label className="form-title">Create an Event</label>
-                <TextInput name="summary" initVal = {this.state.formControls.summary.initVal} value={this.state.formControls.summary.value} onChange={this.changeHandler} valid={this.state.formControls.summary.valid} touched={this.state.formControls.summary.touched}/>
-                <TextInput name="location" initVal = {this.state.formControls.location.initVal} value={this.state.formControls.location.value} onChange={this.changeHandler} valid={this.state.formControls.location.valid} touched={this.state.formControls.location.touched}/>
-                <TextInput name="description" initVal = {this.state.formControls.description.initVal} value={this.state.formControls.description.value} onChange={this.changeHandler} valid={this.state.formControls.description.valid} touched={this.state.formControls.description.touched}/>
-                <TextInput name="attendees" initVal = {this.state.formControls.attendees.initVal} value={this.state.formControls.attendees.value} onChange={this.changeHandler} valid={this.state.formControls.attendees.valid} touched={this.state.formControls.attendees.touched}/>
+                <TextInput name="summary" initVal = {this.state.formControls.summary.initVal} value={this.state.formControls.summary.value} onChange={this.changeHandler} valid={this.state.formControls.summary.valid} formValid={this.state.formValid}/>
+                <TextInput name="location" initVal = {this.state.formControls.location.initVal} value={this.state.formControls.location.value} onChange={this.changeHandler} valid={this.state.formControls.location.valid} formValid={this.state.formValid}/>
+                <TextInput name="description" initVal = {this.state.formControls.description.initVal} value={this.state.formControls.description.value} onChange={this.changeHandler} valid={this.state.formControls.description.valid} formValid={this.state.formValid}/>
+                <TextInput name="attendees" initVal = {this.state.formControls.attendees.initVal} value={this.state.formControls.attendees.value} onChange={this.changeHandler} valid={this.state.formControls.attendees.valid} formValid={this.state.formValid}/>
                 {/*schedule_info
                    TODO: fix format (grid?), add validation for dates*/}
-                <Select name="timezone" initVal = {this.state.formControls.timezone.initVal} value={this.state.formControls.timezone.value} onChange={this.changeHandler} valid={this.state.formControls.timezone.valid} touched={this.state.formControls.timezone.touched} options={this.state.formControls.timezone.options}/>
+                <Select name="timezone" initVal = {this.state.formControls.timezone.initVal} value={this.state.formControls.timezone.value} onChange={this.changeHandler} valid={this.state.formControls.timezone.valid} formValid={this.state.formValid} options={this.state.formControls.timezone.options}/>
                 <label>Start Date</label>
                 <DatePicker 
-                    selected={this.state.startDate} 
+                    // selected={this.state.startDate} 
                     onChange={this.changeStartHandler}
                     inline
                     showMonthDropdown
@@ -219,7 +225,7 @@ class EventForm extends React.Component {
                 />
                 <label>End Date</label>
                 <DatePicker 
-                    selected={this.state.endDate} 
+                    // selected={this.state.endDate} 
                     onChange={this.changeEndHandler}
                     inline
                     showMonthDropdown
@@ -233,9 +239,9 @@ class EventForm extends React.Component {
                     dateFormat="MMMM d, yyyy h:mm aa"    
                     placeholderText="Select an ending date/time"
                 />
-                <Select name="event_duration" initVal= {this.state.formControls.event_duration.initVal} hr={this.state.formControls.event_duration.duration.hr} min={this.state.formControls.event_duration.duration.min} onChange={this.changeHandler} display={this.state.formControls.event_duration.display} valid={this.state.formControls.event_duration.valid} touched={this.state.formControls.event_duration.touched} options={this.state.formControls.event_duration.options}/>
+                <Select name="event_duration" initVal= {this.state.formControls.event_duration.initVal} hr={this.state.formControls.event_duration.duration.hr} min={this.state.formControls.event_duration.duration.min} onChange={this.changeHandler} display={this.state.formControls.event_duration.display} valid={this.state.formControls.event_duration.valid} formValid={this.state.formValid} options={this.state.formControls.event_duration.options}/>
             
-                <button onClick={this.formSubmitHandler} disabled={!this.state.formValid}> Submit </button>
+                <button onClick={this.formSubmitHandler} > Submit </button>
             </div>
         );
     }
