@@ -182,7 +182,7 @@ class EventForm extends React.Component {
             let hour = -1;
             let val = this.state.formControls["event_duration"].value
             while (val > 0) {
-                val -= 60;
+                val -= 59;
                 hour += 1;
             }
             data.schedule_info["duration"].hr = hour.toString();
