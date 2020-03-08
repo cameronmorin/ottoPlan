@@ -4,7 +4,7 @@ import './style/App.css';
 import backend from './service/firebase';
 
 import Sidebar from './components/Sidebar';
-import SearchResults from './components/SearchResults';
+import DisplayContacts from './components/DisplayContacts';
 import { Button } from 'react-bootstrap';
 
 export default class App extends React.Component {
@@ -69,7 +69,7 @@ export default class App extends React.Component {
               <Sidebar photo={this.state.currentUser.photoURL} signOut={this.signOut}/>
             </div>
             <div className='hg-right'>
-              <SearchResults currentUser={this.state.currentUser} />
+              <DisplayContacts currentUser={this.state.currentUser} />
             </div>
           </div>
           :
