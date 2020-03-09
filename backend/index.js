@@ -31,7 +31,8 @@ const TOKEN_PATH = 'token.json';
  */
 // #1 in the async daisy-chain
 // Tried and failed to return oAuth2Client to calling function to send directly to subsequent functions
-async function authorize(credentials, callback, request_data) {
+async function authorize(credentials, token, callback, request_data, all_busy) {
+    console.log('authorize begin\n');
     const {client_secret, client_id, redirect_uris} = credentials.installed;
     const oAuth2Client = new google.auth.OAuth2(
         client_id, client_secret, redirect_uris[0]);
@@ -40,6 +41,25 @@ async function authorize(credentials, callback, request_data) {
     // Auth will be occuring in frontend
     return new Promise( (resolve, reject) => {
 
+        //var i;
+        //for (i = 0; i < 2; i++) {
+
+        // rmail refresh token
+        console.log('setting credentials');
+        //var token_obj = {refresh_token: token};
+        oAuth2Client.setCredentials({refresh_token: token});
+        callback(oAuth2Client, request_data, all_busy)
+            .then(response => {
+                resolve(response);
+            })
+            .catch(err => {
+                reject(err);
+            })
+    })
+
+
+
+    /*
         // Check if we have previously stored a token.
         fs.readFile(TOKEN_PATH, (err, token) => {
             // This line is incorrect and will be unnecessary after auth is handled in frontend
@@ -47,7 +67,7 @@ async function authorize(credentials, callback, request_data) {
             oAuth2Client.setCredentials(JSON.parse(token));
 
             // Call scheduling function chain
-            callback(oAuth2Client, request_data)
+            callback(oAuth2Client, request_data, all_busy)
                 .then(event_info => {
                     //console.log('authorize event_info: ' + JSON.stringify(event_info, null, 2) + '\n');
                     resolve(event_info);
@@ -57,23 +77,8 @@ async function authorize(credentials, callback, request_data) {
                 })
         });
     });
+    */
 }
-
-/*
-//TODO: make this bitch work
-function find_time() {
-    var availability = [];
-    var window = {
-        start_time = request_data.start_time,
-        end_time = request_data.end_time,
-        duration = (request_data.end_time - request_data.start_time)
-    }
-
-    for (user in attendees) {
-        
-*/
-
-
 
 /* Auth handled in frontend
  * Get and store new token after prompting for user authorization, and then
@@ -115,6 +120,23 @@ app.listen(port, () => console.log(`Server started on port ${port}\n`));
 app.post('/schedule_event', asyncHandler(async (req, res) => {
     console.log('req.body: ' + JSON.stringify(req.body, null, 2) + '\n');
 
+    fs.readFile('credentials.json', (err, content) => {
+        if (err) res.json('Error loading client secret file:', err, '\n');
+            console.log('typeof content: ' + typeof content + '\n');
+            console.log('content: ' + content + '\n');
+
+        scheduleEvent(req.body, JSON.parse(content))
+            .then(event_info => {
+                console.log('Sending event_info back to frontend...');
+                res.json(event_info);
+            })
+            .catch(err => {
+                console.log('Sending failure back to frontend...');
+                res.json(err);
+            })
+    });
+
+    /*
     // Load client secrets from a local file.
     fs.readFile('credentials.json', (err, content) => {
         if (err) return console.log('Error loading client secret file:', err, '\n');
@@ -135,24 +157,110 @@ app.post('/schedule_event', asyncHandler(async (req, res) => {
                 res.json(err);
             })
     });
+    */
 
 }));
 
-/* #2 in the async function daisy chain
+/* Loops through list of attendees and calls functions to populate all_busy
+ * Then calls functions to find time and schedule if possible
+ * returns event info from scheduled event (or failure)
  * Calls getOwnCal which returns a JSON of the user's own events
  */
 // TODO: remove this if unnecessary OR utilize it to manage multiple users' calendars
-async function scheduleEvent(auth, request_data) {
+async function scheduleEvent(request_data, credentials) {
     //console.log('request_data: ' + JSON.stringify(request_data, null, 2), '\n');
     //console.log('request_data.start_time: ' + request_data.start_time, '\n');
-
-    // TODO: use all_busy
-    console.log('Calling workingHours\n');
-    var all_busy = [];
-    all_busy = workingHours(request_data);
-    console.log('scheduleEvent all_busy after working hours: ' + JSON.stringify(all_busy, null, 2) + '\n');
+    //console.log('typeof credentials: ' + typeof credentials + '\n');
+    //console.log('credentials: ' + JSON.stringify(credentials) + '\n');
 
     return new Promise( (resolve, reject) => {
+        /*
+            // TODO: adjust this for any number of attendees from request_data
+            //console.log('scheduleEvent Promise begin\n');
+        var attendees = [];
+        //console.log('request_data.gmail_refresh_token: ' + request_data.gmail_refresh_token + '\n');
+        //console.log('request_data.rmail_refresh_token: ' + request_data.rmail_refresh_token + '\n');
+        attendees.push(request_data.gmail_refresh_token);
+        attendees.push(request_data.rmail_refresh_token);
+        //console.log('attendees[0]: ' + attendees[0] + '\n');
+        //console.log('attendees[1]: ' + attendees[1] + '\n');
+
+        // Initialize all_busy with non-working hours/days
+        //console.log('Calling workingHours\n');
+        var all_busy = [];
+        all_busy = workingHours(request_data);
+        //console.log('scheduleEvent all_busy after working hours: ' + JSON.stringify(all_busy, null, 2) + '\n');
+
+        var i;
+        // Populate all_busy using calendar info from all attendees
+    const forLoop = async _ => {
+        for (i = 0; i < attendees.length; i++) {
+            console.log('for loop #' + i + '\n');
+    //authorize(credentials, attendees[i], getOwnCal, request_data, all_busy)
+    //TODO: implement attendees' refresh_token
+    //    .then(new_all_busy => {
+    //        all_busy = JSON.parse(JSON.stringify(new_all_busy));
+    //    })
+    //    .catch(err => {
+    //        console.log('Failed during gathering of users\' busy times');
+    //        reject(err);
+    //    })
+             try {
+                 //TODO: implement attendees.refresh_token
+                all_busy = await authorize(credentials, attendees[i], getOwnCal, requst_data, all_busy);
+            } catch(err) {
+                console.log('Sending failure back to frontend...');
+                reject(err);
+            }
+        }
+    }
+    */
+
+        getAllBusy(credentials, request_data)
+            .then(all_busy => {
+                // TODO: have attendees list include scheduler's refresh token
+                // Have another field for "scheduler": refresh_token so it is booked in the right person's calendar
+
+                // Makes the call to find a good time gap and book the actual event
+                if (all_busy.length > 1) {
+
+                    // TODO: extract the correct start time for the event
+                    // add the duration to get the end time
+                    // TODO: account for time zones
+                    //request_data.work_start
+                    //request_data.work_end
+                    //request_data.event_start = all_busy[0].end;
+                    //request_data.event_end = all_busy[1].start;
+                    var attendees = [];
+                    attendees.push(request_data.gmail_refresh_token);
+
+                    console.log('Calling findWindow\n');
+
+                    //TODO: figure out how to have it use the right auth info to create the event
+                    // have attendees list include scheduler's refresh token
+                    //TODO: implement scheduler_token
+                    authorize(credentials, attendees[0], findWindow, request_data, all_busy)
+                    //findWindow(auth, all_busy, request_data)
+                        .then(event => {
+                            console.log('Scheduled event: ' + JSON.stringify(event));//, null, 2));
+                            resolve(event);
+                        })
+                        .catch(err => {
+                            reject(err);
+                        })
+                }
+                else {
+                    reject('No available times found.');
+                }
+            }).catch(err => {
+                reject(err);
+            })
+    }).catch(err => {
+        reject(err);
+    })
+
+
+    /*
         getOwnCal(auth, all_busy, request_data)
             .then(event_info => {
                 //console.log('scheduleEvent event_info: ' + JSON.stringify(event_info, null, 2) + '\n');
@@ -161,6 +269,38 @@ async function scheduleEvent(auth, request_data) {
             .catch(err => {
                 reject(err);
             })
+            */
+            }
+
+async function getAllBusy(credentials, request_data) {
+    return new Promise( (resolve, reject) => {
+        var attendees = [];
+        attendees.push(request_data.gmail_refresh_token);
+        attendees.push(request_data.rmail_refresh_token);
+        var all_busy = [];
+        all_busy = workingHours(request_data);
+        console.log('complete workingHours all_busy in getAll: ' + JSON.stringify(all_busy) + '\n');
+
+        var i = 0;
+        // Note: this can't be done in a for loop because of the return new Promise above
+        // GOD BLESS THIS PERSON: https://stackoverflow.com/a/21185103
+        (function next(i) {
+            console.log('in function next; i = ' + i + '\n');
+            if (i === attendees.length) {
+                resolve(all_busy);
+            }
+
+            authorize(credentials, attendees[i], getOwnCal, request_data, all_busy)
+            //TODO: implement attendees' refresh_token
+                .then(new_all_busy => {
+                    all_busy = JSON.parse(JSON.stringify(new_all_busy));
+                    next(++i);
+                })
+                .catch(err => {
+                    console.log('Failed during gathering of users\' busy times');
+                    reject(err);
+                })
+        })(0);
     });
 }
 
@@ -173,7 +313,7 @@ async function scheduleEvent(auth, request_data) {
 // Goes through all of user's calendars and creates a list of the calendars owned by the user
 // (expectation is that these will be events that they must actually attend)
 // Receives request_data to pass on to next function called
-async function getOwnCal(auth, all_busy, request_data) {
+async function getOwnCal(auth, request_data, all_busy) {
     console.log('getOwnCal request_data: ' + JSON.stringify(request_data, null, 2) + '\n');
     const calendar = google.calendar({version: 'v3', auth});
 
@@ -202,7 +342,7 @@ async function getOwnCal(auth, all_busy, request_data) {
                     */
                 }
 
-                getOwnBusy(auth, own_cal_ids, all_busy, request_data)
+                getOwnBusy(auth, own_cal_ids, request_data, all_busy)
                     .then(event_info => {
                         //console.log('\ngetOwnCal event_info: ' + JSON.stringify(event_info, null, 2) + '\n');
                         resolve(event_info);
@@ -220,7 +360,7 @@ async function getOwnCal(auth, all_busy, request_data) {
 
 // Creates list of owned events using start/end time in request_data
 // Calls createEvent to schedule the event
-async function getOwnBusy(auth, own_cal_ids, all_busy, request_data) {
+async function getOwnBusy(auth, own_cal_ids, request_data, all_busy) {
     const calendar = google.calendar({version: 'v3', auth});
 
     /* No longer creating/using ottoPlan calendar to reduce permissions
@@ -274,9 +414,9 @@ async function getOwnBusy(auth, own_cal_ids, all_busy, request_data) {
                     //console.log('busy_times.data.calendars[curr_id].busy: ' + JSON.stringify(busy_times.data.calendars[curr_id].busy, null, 2) + '\n');
                     if (busy_times.data.calendars[curr_id].busy.length > 0) {
                         cal_busy = [];
-                        console.log('pre-processing for ' + curr_id + '\n');
+                        //console.log('pre-processing for ' + curr_id + '\n');
                         cal_busy = merge_busy(cal_busy, busy_times.data.calendars[curr_id].busy, duration);
-                        console.log('cal_busy[' + curr_id + ' = ' + i + ']: ' + JSON.stringify(cal_busy, null, 2) + '\n');
+                        //console.log('cal_busy[' + curr_id + ' = ' + i + ']: ' + JSON.stringify(cal_busy, null, 2) + '\n');
                         user_busy = merge_busy(user_busy, cal_busy, duration);
                     }
                     //console.log('user_busy after[' + curr_id + ' = ' + i + ']: ' + JSON.stringify(user_busy, null, 2) + '\n');
@@ -290,45 +430,23 @@ async function getOwnBusy(auth, own_cal_ids, all_busy, request_data) {
                     user_busy.push(busy_slot);
                     */
                 }
-                console.log('COMPLETE user_busy: ' + JSON.stringify(user_busy, null, 2) + '\n');
+                //console.log('COMPLETE user_busy: ' + JSON.stringify(user_busy, null, 2) + '\n');
 
 
                 // TODO: this
                 // Merge user busy_times with all_busy and return the new all_busy
                 all_busy = merge_busy(all_busy, user_busy, duration);
-                console.log('getOwnBusy all_busy: ' + JSON.stringify(all_busy, null, 2) + '\n');
+                //console.log('getOwnBusy all_busy: ' + JSON.stringify(all_busy, null, 2) + '\n');
 
+                resolve(all_busy);
 
-                if (all_busy.length > 1) {
-
-                    // TODO: extract the correct start time for the event
-                    // add the duration to get the end time
-                    // TODO: account for time zones
-                    //request_data.work_start
-                    //request_data.work_end
-                    //request_data.event_start = all_busy[0].end;
-                    //request_data.event_end = all_busy[1].start;
-
-                    console.log('Calling findWindow\n');
-                    findWindow(auth, all_busy, request_data)
-                        .then(event => {
-                            console.log('getOwnBusy event: ' + JSON.stringify(event, null, 2));
-                            resolve(event);
-                        })
-                        .catch(err => {
-                            reject(err);
-                        })
-                }
-                else {
-                    reject('No available times found.');
-                }
 
             }).catch(err => {
                 reject('Error contacting Calendar API: ' + err);
             });
     });
 }
-async function findWindow(auth, all_busy, request_data) {
+async function findWindow(auth, request_data, all_busy) {
     return new Promise(function(resolve, reject) {
         // TODO: extract the correct start time for the event
         // add the duration to get the end time
@@ -392,7 +510,6 @@ async function findWindow(auth, all_busy, request_data) {
                 request_data.event_end = ISODateString(end_time);
                 console.log('request_data.event_end: ' + request_data.event_end + '\n');
 
-                console.log('findWindow calling createEvent\n');
 
                 time_found = true;
                 break;
@@ -405,6 +522,7 @@ async function findWindow(auth, all_busy, request_data) {
         }
 
         if (time_found) {
+            console.log('findWindow calling createEvent\n');
             createEvent(auth, request_data)
                 .then(function(event) {
                     //console.log('getOwnBusy event: ' + JSON.stringify(event, null, 2));
@@ -589,10 +707,10 @@ function workingHours(request_data) {
         // TODO: adjust this to use user's specifications
         //
         // If within Friday after 9am - Sunday, create new busy block until Monday @ 9am or end of search window (whichever is first)
-        console.log('getDay() = ' + search_start.getDay() + '; getHours() = ' + search_start.getHours());
+        //console.log('getDay() = ' + search_start.getDay() + '; getHours() = ' + search_start.getHours());
 
         if (search_start.getDay() == 0 || search_start.getDay() == 6 || (search_start.getDay() == 5 && search_start.getHours() >= 9)) {
-            console.log('Weekend: ' + search_start.getDay() + '\n');
+            //console.log('Weekend: ' + search_start.getDay() + '\n');
 
             // If the start of the search window is on a Friday within working hours, set the start of the block to be end of day Friday
             if (search_start.getDay() == 5 && search_start.getHours() < 17) {
@@ -613,7 +731,7 @@ function workingHours(request_data) {
         }
         // Block out non-working hours of working days (Mon - Thurs)
         else {
-            console.log('Weekday: ' + search_start.getDay() + '\n');
+            //console.log('Weekday: ' + search_start.getDay() + '\n');
             // If the start of the search window is outside of working hours, create a new block until 9am
             // Don't need to adjust the start of the search window
             if (search_start.getHours() < 9) {
@@ -639,7 +757,7 @@ function workingHours(request_data) {
 
         }
 
-        console.log('Checking if next working day is before end of search window\n');
+        //console.log('Checking if next working day is before end of search window\n');
 
         // If the next working day is after the end of the search window, just set it to the end of the search window
         if (nonwork_end > parseDate(request_data.end_time)) {
@@ -661,7 +779,7 @@ function workingHours(request_data) {
         search_start.setMilliseconds(0);
     }
 
-    //console.log('working_hours: ' + JSON.stringify(working_hours, null, 2) + '\n');
+    console.log('working_hours: ' + JSON.stringify(working_hours, null, 2) + '\n');
     return working_hours;
 }
 
