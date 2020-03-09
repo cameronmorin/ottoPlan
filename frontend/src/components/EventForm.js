@@ -186,7 +186,24 @@ class EventForm extends React.Component {
         data.schedule_info["timezone"] = this.state.formControls["timezone"].value;
 
         //event info
-        alert(JSON.stringify(data, null, 2));
+        //alert(JSON.stringify(data, null, 2));
+
+        fetch('/schedule_event', {
+            method: 'POST', 
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(response => response.json())
+        .then(result => {
+            console.log('Success json: ', JSON.stringify(result));
+            alert('SUCCESS; BUT THE DAMN JSON WON\'T OUTPUT HERE:', JSON.stringify(result, null, 2));
+        })
+        .catch((err) => {
+            console.log('Error: ', err);
+            alert('Error: ', err);
+        });
     }
 
     render () {
