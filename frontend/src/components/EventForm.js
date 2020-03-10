@@ -5,6 +5,7 @@ import TextInput from './TextInput';
 import validate from './validation';
 import SelectOption from './SelectOption';
 import Attendees from './Attendees';
+import backend from '../service/firebase';
 
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -25,6 +26,8 @@ export default class EventForm extends React.Component {
       this.state={
         formValid: true,
         showError: false,
+        checkList: [],
+        attendees: [],
         
         formControls: {
           summary: {
@@ -47,13 +50,6 @@ export default class EventForm extends React.Component {
             touched: false,
             validationRules: {isRequired: false},
             from: 'event'
-          },
-          attendees: {
-            value: '',
-            valid: false,
-            touched: false,
-            validationRules: {isRequired: true},
-            from: 'event'     
           },
           event_duration: {
             value: '',
@@ -136,8 +132,33 @@ export default class EventForm extends React.Component {
       });
     };
 
+    checkAttendee = async event => {
+      var newList = this.state.checkList;
+      // const uid = event.target.id;
+      const idPos = newList.findIndex(id => id === event.target.id);
+      if (idPos === -1) {
+        // UID is not in array
+        newList.push(event.target.id);
+      }
+      else {
+        // Remove attendee from list
+        newList.splice(idPos, 1);
+      }
+      this.setState({checkList: newList});
+      console.log('Attendee Update: ', this.state.checkList);
+    }
+
+    setAttendees = async () => {
+      var attendeeList = [];
+      for (let i = 0; i < this.state.checkList.length; ++i) {
+        const data = await backend.getAttendeeInfo(this.state.checkList[i]);
+        attendeeList.push(data);
+      }
+      return attendeeList;
+    }
+
     //handler for submit/making json
-    formSubmitHandler = () => {
+    formSubmitHandler = async () => {
       const event_info = {};
       const schedule_info = {};
       const data = {event_info, schedule_info};
@@ -158,6 +179,10 @@ export default class EventForm extends React.Component {
         this.setState({ showError: true });
       }
       else {  //populate JSON for backend
+        // Get email/refresh tokens for all attendees and put into list
+        const organizerData = await backend.getAttendeeInfo(this.props.currentUser.uid)
+        const attendeeList = await this.setAttendees();
+
         for(let y in this.state.formControls) {
           if(this.state.formControls[y].from === 'event') {
             data.event_info[y] = this.state.formControls[y].value;
@@ -174,7 +199,11 @@ export default class EventForm extends React.Component {
         data.schedule_info["duration"].min = (this.state.formControls["event_duration"].value % 60).toString();
         data.schedule_info["start_date"] = this.state.startDate;
         data.schedule_info["end_date"] = this.state.endDate;
-        data.schedule_info["timezone"] = this.state.formControls["timezone"].value;  
+        data.schedule_info["timezone"] = this.state.formControls["timezone"].value;
+        
+        // Set organizer and attendee info in the JSON file
+        data.schedule_info["organizer"] = organizerData;
+        data.event_info["attendees"] = attendeeList;
         
         //event info to send to backend
         alert(JSON.stringify(data, null, 2));
@@ -191,7 +220,9 @@ export default class EventForm extends React.Component {
               <TextInput name="location" initVal = {this.state.formControls.location.initVal} value={this.state.formControls.location.value} onChange={this.changeHandler} valid={this.state.formControls.location.valid} formValid={this.state.formValid}/>
               <TextInput name="description" initVal = {this.state.formControls.description.initVal} value={this.state.formControls.description.value} onChange={this.changeHandler} valid={this.state.formControls.description.valid} formValid={this.state.formValid}/>
               {/* <TextInput name="attendees" initVal = {this.state.formControls.attendees.initVal} value={this.state.formControls.attendees.value} onChange={this.changeHandler} valid={this.state.formControls.attendees.valid} formValid={this.state.formValid}/> */}
-              <Attendees />
+              <h4>Attendees</h4>
+              <Attendees contacts={this.props.contacts} checkBox={this.checkAttendee}/>
+              <button onClick={this.setAttendees}>Set Attendees</button>
               {/*schedule_info
                  TODO: fix format (grid?), add validation for dates*/}
               <SelectOption name="timezone" onChange={this.changeHandler} valid={this.state.formControls.timezone.valid} formValid={this.state.formValid} options={this.state.formControls.timezone.options} default={this.state.formControls.timezone.default}/>
