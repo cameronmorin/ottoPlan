@@ -2,7 +2,6 @@ import React from 'react';
 import firebase from 'firebase';
 import './style/App.css';
 import backend from './service/firebase';
-import {Button} from 'react-bootstrap';
 
 import Sidebar from './components/Sidebar';
 import DisplayContacts from './components/DisplayContacts';
