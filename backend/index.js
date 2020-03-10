@@ -122,8 +122,9 @@ app.post('/schedule_event', asyncHandler(async (req, res) => {
 
     fs.readFile('credentials.json', (err, content) => {
         if (err) res.json('Error loading client secret file:', err, '\n');
-            console.log('typeof content: ' + typeof content + '\n');
-            console.log('content: ' + content + '\n');
+        //console.log('typeof content: ' + typeof content + '\n');
+        //console.log('content: ' + content + '\n');
+        //res.json(JSON.parse(content));
 
         scheduleEvent(req.body, JSON.parse(content))
             .then(event_info => {
@@ -174,17 +175,21 @@ async function scheduleEvent(request_data, credentials) {
     //console.log('credentials: ' + JSON.stringify(credentials) + '\n');
 
     return new Promise( (resolve, reject) => {
-        /*
             // TODO: adjust this for any number of attendees from request_data
             //console.log('scheduleEvent Promise begin\n');
+        /*
         var attendees = [];
+        // gmail token
+        attendees.push('1//06ue5SnV-Ua2JCgYIARAAGAYSNwF-L9IrIbsANAwzjCyFRctMpX4eQnfWLpTRmH-3h6fu4nM0-nnRhVYvFzReBQ-hc-DeLp5a9d0');
+        // rmail token
+        attendees.push('1//06CQRedBAeU1bCgYIARAAGAYSNwF-L9Ir1jzPH6gzOViheTUTWrR_S4SYw_p61pv4yN3Ob1g3OKzn95y7Xx5t3sbmtWPdhT9ECGU');
+        */
         //console.log('request_data.gmail_refresh_token: ' + request_data.gmail_refresh_token + '\n');
         //console.log('request_data.rmail_refresh_token: ' + request_data.rmail_refresh_token + '\n');
-        attendees.push(request_data.gmail_refresh_token);
-        attendees.push(request_data.rmail_refresh_token);
         //console.log('attendees[0]: ' + attendees[0] + '\n');
         //console.log('attendees[1]: ' + attendees[1] + '\n');
 
+        /*
         // Initialize all_busy with non-working hours/days
         //console.log('Calling workingHours\n');
         var all_busy = [];
@@ -232,7 +237,9 @@ async function scheduleEvent(request_data, credentials) {
                     //request_data.event_start = all_busy[0].end;
                     //request_data.event_end = all_busy[1].start;
                     var attendees = [];
-                    attendees.push(request_data.gmail_refresh_token);
+                    // gmail refresh token
+                    attendees.push('1//06ue5SnV-Ua2JCgYIARAAGAYSNwF-L9IrIbsANAwzjCyFRctMpX4eQnfWLpTRmH-3h6fu4nM0-nnRhVYvFzReBQ-hc-DeLp5a9d0');
+                    //attendees.push(request_data.gmail_refresh_token);
 
                     console.log('Calling findWindow\n');
 
@@ -275,8 +282,13 @@ async function scheduleEvent(request_data, credentials) {
 async function getAllBusy(credentials, request_data) {
     return new Promise( (resolve, reject) => {
         var attendees = [];
-        attendees.push(request_data.gmail_refresh_token);
-        attendees.push(request_data.rmail_refresh_token);
+        //attendees.push(request_data.gmail_refresh_token);
+        //attendees.push(request_data.rmail_refresh_token);
+        // TODO: remove this after attendees implemented in frontend
+        // gmail token
+        attendees.push('1//06ue5SnV-Ua2JCgYIARAAGAYSNwF-L9IrIbsANAwzjCyFRctMpX4eQnfWLpTRmH-3h6fu4nM0-nnRhVYvFzReBQ-hc-DeLp5a9d0');
+        // rmail token
+        attendees.push('1//06CQRedBAeU1bCgYIARAAGAYSNwF-L9Ir1jzPH6gzOViheTUTWrR_S4SYw_p61pv4yN3Ob1g3OKzn95y7Xx5t3sbmtWPdhT9ECGU');
         var all_busy = [];
         all_busy = workingHours(request_data);
         console.log('complete workingHours all_busy in getAll: ' + JSON.stringify(all_busy) + '\n');
@@ -382,11 +394,13 @@ async function getOwnBusy(auth, own_cal_ids, request_data, all_busy) {
             headers: {"content-type": "application/json" },
             resource:{
                 items: own_cal_ids,
-                timeMin: request_data.start_date,
+                //timeMin: request_data.start_date,
                 // TODO: fix timeMin call when form is sent correctly from frontEnd
                 //timeMin: request_data.scheduling_info.start.dateTime,
                 //timeMax: request_data.scheduling_info.end.dateTime,
-                timeMax: request_data.end_date,
+                //timeMax: request_data.end_date,
+                timeMin: request_data.schedule_info.start_date,
+                timeMax: request_data.schedule_info.end_date
                 
                 // Compiling the list of busy times all in UTC to account for possible variety of time zones accross all calendars
                 // To request return data in PST instead of UTC:
@@ -463,7 +477,7 @@ async function findWindow(auth, request_data, all_busy) {
 
 
 
-        var search_start = parseDate(request_data.start_date);
+        var search_start = parseDate(request_data.schedule_info.start_date);
         //search_start = new Date(search_start.getTime());
         //var test_date = new Date(search_start.getTime());
         //console.log('test_date: ' + test_date + '\tconverted: ' + test_date.toLocaleString("en-US", {timeZone: "America/Los_Angeles"}) + '; typeof: ' + typeof test_date + '\n');
@@ -559,11 +573,11 @@ async function createEvent(auth, request_data) {
     var new_event = {
         // TODO: Update the rhs of these when form sends correct JSON
         //summary: request_data.event_info.summary,
-        summary: request_data.summary,
+        summary: request_data.event_info.summary,
         //location: request_data.event_info.location,
-        location: request_data.location,
+        location: request_data.event_info.location,
         //description: request_data.event_info.description,
-        description: request_data.description,
+        description: request_data.event_info.description,
         start: {
             //dateTime: request_data.scheduling_info.start.dateTime,
             //dateTime: request_data.start_time,
@@ -683,11 +697,11 @@ function workingHours(request_data) {
     var working_hours = [];
 
     // Must set milliseconds to 0 otherwise it defaults to some non-zero value
-    console.log('start_date: ' + request_data.start_date + '\n');
-    var search_start = parseDate(request_data.start_date);
+    console.log('start_date: ' + request_data.schedule_info.start_date + '\n');
+    var search_start = parseDate(request_data.schedule_info.start_date);
     search_start.setMilliseconds(0);
     console.log('search_start: ' + search_start + '\n');
-    var end_date = new Date(parseDate(request_data.end_date));
+    var end_date = new Date(parseDate(request_data.schedule_info.end_date));
     end_date.setMilliseconds(0);
 
     //var i = 0;
@@ -761,7 +775,7 @@ function workingHours(request_data) {
         //console.log('Checking if next working day is before end of search window\n');
 
         // If the next working day is after the end of the search window, just set it to the end of the search window
-        if (nonwork_end > parseDate(request_data.end_date)) {
+        if (nonwork_end > parseDate(request_data.schedule_info.end_date)) {
             nonwork_end.setTime(end_date.getTime());
             nonwork_end.setMilliseconds(0);
         }
