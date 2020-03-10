@@ -4,7 +4,6 @@ import './style/App.css';
 import backend from './service/firebase';
 
 import Sidebar from './components/Sidebar';
-import DisplayContacts from './components/DisplayContacts';
 import { Button } from 'react-bootstrap';
 import EventForm from './components/EventForm';
 
@@ -16,7 +15,9 @@ export default class App extends React.Component {
 
     this.state = {
       isAuthenticated: false,
+      isLoading: false,
       currentUser: null,
+      contacts: null,
       searchBox: null,
       searchResults: null,
       show: false,
@@ -32,6 +33,8 @@ export default class App extends React.Component {
           isAuthenticated: true,
           currentUser: user.providerData[0]
         });
+        // Get user contacts on sign in FIXME later
+        this.getContacts();
       }
       else {
         this.setState({
@@ -40,6 +43,12 @@ export default class App extends React.Component {
         });
       }
     });
+  }
+
+  getContacts = async () => {
+    this.setState({isLoading: true});
+    const results = await backend.returnContacts(this.state.currentUser.uid);
+    this.setState({isLoading: false, contacts: results});
   }
 
   popupSignIn = () => {
@@ -54,6 +63,7 @@ export default class App extends React.Component {
       console.log(error);
     });
   }
+
   signOut = () => {
     firebase.auth().signOut().then(() => {
       console.log('Sign out successful.');
@@ -72,8 +82,7 @@ export default class App extends React.Component {
               <Sidebar photo={this.state.currentUser.photoURL} signOut={this.signOut}/>
             </div>
             <div className='hg-right'>
-              <EventForm />
-              <DisplayContacts currentUser={this.state.currentUser} />
+              <EventForm currentUser={this.state.currentUser} contacts={this.state.contacts}/>
             </div>
           </div>
           :
