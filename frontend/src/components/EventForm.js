@@ -206,7 +206,23 @@ export default class EventForm extends React.Component {
         data.event_info["attendees"] = attendeeList;
         
         //event info to send to backend
-        alert(JSON.stringify(data, null, 2));
+          //alert(JSON.stringify(data, null, 2));
+          fetch('/schedule_event', {
+              method: 'POST', 
+              headers: {
+                  'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(data),
+          })
+          .then(response => response.json())
+          .then(result => {
+              console.log('Success json: ', JSON.stringify(result));
+              alert('Link: (THIS STILL DOESN\'T WORK)', JSON.stringify(result.data.htmLink, null, 2));
+          })
+          .catch((err) => {
+              console.log('Error: ', err);
+              alert('Error: ', err);
+          });
       }
     }
 
