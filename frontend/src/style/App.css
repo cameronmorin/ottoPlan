@@ -45,13 +45,45 @@
   flex-direction: column;
   grid-column: 1 span 1;
   background-color: #f9dc5c;
-  color: #282c34;
+  display: flex;
+  color: hsl(220, 13%, 18%);
 }
 
-.hg-right {
+.hg-center {
   display: flex;
   flex-direction: column;
   grid-column: 2 span 1;
   align-items: center;
   justify-content: center;
+}
+
+.hg-right {
+  /* display: flex; */
+  grid-column: 2 span 1;
+  align-items: center;
+  justify-content: center;
+  width: 100%
+}
+
+.form-control {
+  width: 100%;
+  /* border: 1px solid#ccc; */
+  /* padding: 1px; */
+}
+
+.control-error {
+  border: 1px solid red;
+}
+
+.form-title {
+  font-size: calc(10px + 2vmin);
+}
+
+.event-form {
+  font-family: 'Montserrat';
+  background-color: #282c34;
+  color: #f9dc5c;
+  padding: 10px;
+  max-height: 100vh;
+  overflow-y: scroll;
 }

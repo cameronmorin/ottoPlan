@@ -2,10 +2,12 @@ import React from 'react';
 import firebase from 'firebase';
 import './style/App.css';
 import backend from './service/firebase';
+import {Button} from 'react-bootstrap';
 
 import Sidebar from './components/Sidebar';
 import DisplayContacts from './components/DisplayContacts';
 import { Button } from 'react-bootstrap';
+import EventForm from './components/EventForm';
 
 export default class App extends React.Component {
   constructor(props) {
@@ -17,7 +19,9 @@ export default class App extends React.Component {
       isAuthenticated: false,
       currentUser: null,
       searchBox: null,
-      searchResults: null
+      searchResults: null,
+      show: false,
+      setShow: false
     };
   }
 
@@ -69,6 +73,7 @@ export default class App extends React.Component {
               <Sidebar photo={this.state.currentUser.photoURL} signOut={this.signOut}/>
             </div>
             <div className='hg-right'>
+              <EventForm />
               <DisplayContacts currentUser={this.state.currentUser} />
             </div>
           </div>
