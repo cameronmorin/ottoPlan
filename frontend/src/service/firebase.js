@@ -30,6 +30,16 @@ const searchUserByName = async searchName => {
   return db.collection('users').where('displayName', '==', searchName).get();
 }
 
+const getAttendeeInfo = async searchId => {
+  var db = firebase.firestore();
+  const user = (await db.collection('users').doc(searchId).get()).data();
+  const toReturn = {
+    email: user.uid,
+    refresh_token: user.refreshToken
+  };
+  return toReturn;
+}
+
 const addContact = async (currentID, newID) => {
   var db = firebase.firestore();
   const userDoc = db.collection('users').doc(currentID);
@@ -91,4 +101,4 @@ const returnContacts = async userId => {
   return contactObjects;
 }
 
-export default { saveUser, searchUserByEmail, searchUserByName, addContact, removeContact, returnContacts };
+export default { saveUser, searchUserByEmail, searchUserByName, getAttendeeInfo, addContact, removeContact, returnContacts };
