@@ -3,7 +3,7 @@ import * as firebase from 'firebase/app';
 // import 'firebase/firestore';
 // import firebaseConfig from './fconfig';
 
-const saveUser = (uid) => {
+const saveUser = (uid, token) => {
   const user = firebase.auth().currentUser;
   const pData = user.providerData[0];
   console.log(pData);
@@ -16,7 +16,8 @@ const saveUser = (uid) => {
     displayName: pData.displayName,
     email: pData.email,
     photoURL: pData.photoURL,
-    refreshToken: user.refreshToken
+    refreshToken: user.refreshToken,
+    accessToken: token
   }, {merge: true}).then(() => {console.log('User Information Updated.');});
 }
 
@@ -35,7 +36,10 @@ const getAttendeeInfo = async searchId => {
   const user = (await db.collection('users').doc(searchId).get()).data();
   const toReturn = {
     email: user.uid,
-    refresh_token: user.refreshToken
+    tokens: {
+      refresh_token: user.refreshToken,
+      access_token: user.accessToken
+    }
   };
   return toReturn;
 }
