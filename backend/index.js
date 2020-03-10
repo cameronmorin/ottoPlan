@@ -174,6 +174,7 @@ async function scheduleEvent(request_data, credentials) {
     //console.log('typeof credentials: ' + typeof credentials + '\n');
     //console.log('credentials: ' + JSON.stringify(credentials) + '\n');
 
+    //TODO: after attendees come in from frontend correctly, call workingHours from here instead of getAllBusy
     return new Promise( (resolve, reject) => {
             // TODO: adjust this for any number of attendees from request_data
             //console.log('scheduleEvent Promise begin\n');
@@ -239,6 +240,7 @@ async function scheduleEvent(request_data, credentials) {
                     var attendees = [];
                     // gmail refresh token
                     attendees.push('1//06ue5SnV-Ua2JCgYIARAAGAYSNwF-L9IrIbsANAwzjCyFRctMpX4eQnfWLpTRmH-3h6fu4nM0-nnRhVYvFzReBQ-hc-DeLp5a9d0');
+                    //attendees.push('AEu4IL0eJknM-ODSU0w36d4CdgB4-DA3oXom5FpaTqssIww-j4LF2ASw92mTP9JyO51uQ277DtMkc1NYakXk9PKPbXJCSzQ81FngKOiH7mXC34bO6DB45BXZXX80Dsnk_xn781xpmH62k8rlmmGEHgGa-apo8JxlJ-FUmTU0Q5y0fm6VZv5ygDwBaJoWwpykCjfj0GyFRm4OFILQ-JfZBCMiq266dEDYu2Fly-lrAtR4A2uyY4zITT-_891LNs-HzWexSF3feJlBTGnVWpzdmY8MUe51Y2Y0ugZeZtiyDaEu7cUx-dlR0QiALLvnjwuBBQIw9pGOwmkYHwwcgyOHjotOKmyBJDrUYgOgNqsVLl-BacRg6NWGToNTwXT_PFk5fmIfDIy7ltE8ZjmlayGe3zlkC1BxbKKnutiHivDqAEbg7tCIZU0X0yq4ZnmIpaxcDNVy1ywS_WwK');
                     //attendees.push(request_data.gmail_refresh_token);
 
                     console.log('Calling findWindow\n');
