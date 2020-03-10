@@ -55,9 +55,10 @@ export default class App extends React.Component {
     var GoogleProvider = new firebase.auth.GoogleAuthProvider();
     GoogleProvider.addScope('https://www.googleapis.com/auth/calendar.events');
     GoogleProvider.addScope('https://www.googleapis.com/auth/calendar.readonly');
+    GoogleProvider.setCustomParameters({'access_type': 'offline'});
     firebase.auth().signInWithPopup(GoogleProvider).then(result => {
       console.log('Succes!\n', result);
-      backend.saveUser(result.additionalUserInfo.profile.id);
+      backend.saveUser(result.additionalUserInfo.profile.id, result.credential.accessToken);
     }).catch(error => {
       console.log('Error signing in.');
       console.log(error);
