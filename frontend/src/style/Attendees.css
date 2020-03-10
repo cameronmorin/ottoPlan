@@ -1,0 +1,39 @@
+.attendee {
+  display: flex;
+  min-width: fit-content;
+  border-radius: 10px;
+  color: #000000;
+  background-color: #ffffff;
+  margin: 5px;
+}
+
+.attendee-img {
+  height: 50px;
+  border-radius: 50%;
+  margin: 10px;
+}
+
+.attendee-info {
+  display: grid;
+  grid-template: 1fr 1fr / 1fr;
+}
+
+.attendee-name {
+  display: flex;
+  grid-row: 1 span 1;
+  font-size: 1.2em;
+  margin: auto 10px;
+}
+
+.attendee-email {
+  display: flex;
+  grid-row: 2 span 1;
+  font-size: 1em;
+  margin: auto 10px;
+}
+
+.attendee-check {
+  display: flex;
+  justify-content: flex-end;
+  margin: auto 10px auto auto;
+}
