@@ -103,8 +103,8 @@ class EventForm extends React.Component {
                 },
             },
 
-            startDate: new Date(2020, 0, 26, 9),
-            endDate: new Date(2020, 0, 26, 9)
+            startDate: new Date(),
+            endDate: new Date()
         }
     }
 
@@ -182,7 +182,7 @@ class EventForm extends React.Component {
             let hour = -1;
             let val = this.state.formControls["event_duration"].value
             while (val > 0) {
-                val -= 59;
+                val -= 59   ;
                 hour += 1;
             }
             data.schedule_info["duration"].hr = hour.toString();
@@ -212,7 +212,7 @@ class EventForm extends React.Component {
                 <SelectOption name="timezone" onChange={this.changeHandler} valid={this.state.formControls.timezone.valid} formValid={this.state.formValid} options={this.state.formControls.timezone.options} default={this.state.formControls.timezone.default}/>
                 <label>Start Date</label>
                 <DatePicker 
-                    // selected={this.state.startDate} 
+                    selected={this.state.startDate} 
                     onChange={this.changeStartHandler}
                     inline
                     showMonthDropdown
@@ -228,7 +228,7 @@ class EventForm extends React.Component {
                 />
                 <label>End Date</label>
                 <DatePicker 
-                    // selected={this.state.endDate} 
+                    selected={this.state.endDate} 
                     onChange={this.changeEndHandler}
                     inline
                     showMonthDropdown
