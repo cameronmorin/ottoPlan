@@ -382,11 +382,11 @@ async function getOwnBusy(auth, own_cal_ids, request_data, all_busy) {
             headers: {"content-type": "application/json" },
             resource:{
                 items: own_cal_ids,
-                timeMin: request_data.start_time,
+                timeMin: request_data.start_date,
                 // TODO: fix timeMin call when form is sent correctly from frontEnd
                 //timeMin: request_data.scheduling_info.start.dateTime,
                 //timeMax: request_data.scheduling_info.end.dateTime,
-                timeMax: request_data.end_time,
+                timeMax: request_data.end_date,
                 
                 // Compiling the list of busy times all in UTC to account for possible variety of time zones accross all calendars
                 // To request return data in PST instead of UTC:
@@ -463,7 +463,7 @@ async function findWindow(auth, request_data, all_busy) {
 
 
 
-        var search_start = parseDate(request_data.start_time);
+        var search_start = parseDate(request_data.start_date);
         //search_start = new Date(search_start.getTime());
         //var test_date = new Date(search_start.getTime());
         //console.log('test_date: ' + test_date + '\tconverted: ' + test_date.toLocaleString("en-US", {timeZone: "America/Los_Angeles"}) + '; typeof: ' + typeof test_date + '\n');
@@ -486,15 +486,15 @@ async function findWindow(auth, request_data, all_busy) {
             // Available meeting time found
             if (gapOkay(search_start, parseDate(all_busy[i].start), duration)) {
                 
-                var end_time = new Date();
+                var end_date = new Date();
                 //console.log('typeof: ' + typeof end_time);
-                end_time.setTime(search_start.getTime() + toMSec(duration));
+                end_date.setTime(search_start.getTime() + toMSec(duration));
 
-                console.log('end_time.getHours(): ' + end_time.getHours() + '\n');
+                console.log('end_date.getHours(): ' + end_date.getHours() + '\n');
                 
-                // Check if end_time is outside of working hours
-                if (end_time.getHours() >= 17) {
-                    console.log('Ends outside of working hours: ' + end_time.getHours() + '\n');
+                // Check if end_date is outside of working hours
+                if (end_date.getHours() >= 17) {
+                    console.log('Ends outside of working hours: ' + end_date.getHours() + '\n');
                     search_start = parseDate(all_busy[i++].end);
                     continue;
                 }
@@ -507,7 +507,7 @@ async function findWindow(auth, request_data, all_busy) {
 
                 //console.log('end_time + ms = ' + end_time + '; typeof: ' + typeof end_time);
 
-                request_data.event_end = ISODateString(end_time);
+                request_data.event_end = ISODateString(end_date);
                 console.log('request_data.event_end: ' + request_data.event_end + '\n');
 
 
@@ -569,13 +569,13 @@ async function createEvent(auth, request_data) {
             //dateTime: request_data.start_time,
             dateTime: request_data.event_start,
             //timeZone: 'America/Los_Angeles'
-            //timeZone: request_data.scheduling_info.time_zone
+            //timeZone: request_data.scheduling_info.timezone
         },
         end: {
             //dateTime: request_data.end_time,
             dateTime: request_data.event_end,
             //timeZone: 'America/Los_Angeles'
-            // timeZone: request_data.scheduling_info.time_zone
+            // timeZone: request_data.scheduling_info.timezone
         },
         // TODO: Importing emails from request_data isn't working right now because it's coming in as a list of email addresses, but we need it as an object in the format below
         //attendees: request_data.email,
@@ -683,14 +683,15 @@ function workingHours(request_data) {
     var working_hours = [];
 
     // Must set milliseconds to 0 otherwise it defaults to some non-zero value
-    var search_start = parseDate(request_data.start_time);
+    console.log('start_date: ' + request_data.start_date + '\n');
+    var search_start = parseDate(request_data.start_date);
     search_start.setMilliseconds(0);
-    //console.log('search_start: ' + search_start + '\n');
-    var end_time = new Date(parseDate(request_data.end_time));
-    end_time.setMilliseconds(0);
+    console.log('search_start: ' + search_start + '\n');
+    var end_date = new Date(parseDate(request_data.end_date));
+    end_date.setMilliseconds(0);
 
     //var i = 0;
-    while (new Date(search_start).getTime() < new Date(end_time).getTime()) {
+    while (new Date(search_start).getTime() < new Date(end_date).getTime()) {
         /*console.log('-------------------\nwhile loop #' + i + '\n');
         console.log('search_start: ' + search_start + '\n');
         console.log('parseDate(request_data.end_time): ' + parseDate(request_data.end_time) + '\n');
@@ -760,8 +761,8 @@ function workingHours(request_data) {
         //console.log('Checking if next working day is before end of search window\n');
 
         // If the next working day is after the end of the search window, just set it to the end of the search window
-        if (nonwork_end > parseDate(request_data.end_time)) {
-            nonwork_end.setTime(end_time.getTime());
+        if (nonwork_end > parseDate(request_data.end_date)) {
+            nonwork_end.setTime(end_date.getTime());
             nonwork_end.setMilliseconds(0);
         }
         //console.log('nonwork_start: ' + nonwork_start + '\n');
@@ -997,13 +998,13 @@ async function createCal(auth) {
   const calendar = google.calendar({version: 'v3', auth});
 
 // Retrieve time zone of primary calendar to set for new calendar
-  var time_zone = '';
+  var timezone = '';
   await calendar.calendars.get({
       calendarId: 'primary'
   })
     .then(resp => {
         //console.log(resp.data.timeZone, '\n');
-        time_zone = resp.data.timeZone;
+        timezone = resp.data.timeZone;
     }).catch(err => {
         console.log(err.message, '\n');
     });
@@ -1016,7 +1017,7 @@ async function createCal(auth) {
           summary: 'ottoPlan Meetings',
           description: 'Meetings scheduled by ottoPlan',
               // Set timeZone to same as primary calendar
-          timeZone: time_zone
+          timeZone: timezone
       }
   })
     .then(resp => {
