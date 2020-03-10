@@ -36,8 +36,10 @@ const getAttendeeInfo = async searchId => {
   const user = (await db.collection('users').doc(searchId).get()).data();
   const toReturn = {
     email: user.uid,
-    refresh_token: user.refreshToken,
-    access_token: user.accessToken
+    tokens: {
+      refresh_token: user.refreshToken,
+      access_token: user.accessToken
+    }
   };
   return toReturn;
 }
