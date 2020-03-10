@@ -63,7 +63,7 @@ export default class App extends React.Component {
                   "timeZone": "America/Los_Angeles"
               },
                 "event_duration": "",
-                "time_zone": "",
+                "timezone": "",
                 "start_date": "",
                 "end_date": "",
                 "start_time": "",
@@ -120,22 +120,26 @@ export default class App extends React.Component {
           <label htmlFor="description">Event description:</label>
           <input text="text" name="description" value='This is a test event made within a form on the test site'/><br/><br/>
           <label htmlFor="attendees">Attendee Info:</label>
-          <input text="text" name="email" value='ewong012@ucr.edu'/>
-          <input text="text" name="email" value=''/><br/><br/>
-          {/* TODO: change start_time and end_time to just dates and accomodate in ./backend/index.js accordingly */}
-          <label htmlFor="start_time">Start of Time Window</label>
-          <input text="text" name="start_time" value="2020-02-16T20:00:00-05:00"/>
-          <label htmlFor="end_time">End of Time Window</label>
-          <input text="text" name="end_time" value="2020-02-22T20:00:00-09:00"/><br/><br/>
+          <input text="text" name="rmail_refresh_token" value='1//06CQRedBAeU1bCgYIARAAGAYSNwF-L9Ir1jzPH6gzOViheTUTWrR_S4SYw_p61pv4yN3Ob1g3OKzn95y7Xx5t3sbmtWPdhT9ECGU'/><br/>
+          <input text="text" name="gmail_refresh_token" value='1//06ue5SnV-Ua2JCgYIARAAGAYSNwF-L9IrIbsANAwzjCyFRctMpX4eQnfWLpTRmH-3h6fu4nM0-nnRhVYvFzReBQ-hc-DeLp5a9d0'/><br/><br/>
+          {/* TODO: change start_date and end_date to just dates and accomodate in ./backend/index.js accordingly */}
+          <label htmlFor="start_date">Start of Time Window</label>
+          <input text="text" name="start_date" value="2020-01-26T17:00:00.000Z"/><br/>
+          <label htmlFor="end_date">End of Time Window</label>
+          <input text="text" name="end_date" value="2020-01-29T17:00:00.000Z"/><br/><br/>
+          <label htmlFor="location">Location</label>
+          <input text="text" name="location" value="ur mom"/><br/><br/>
+          {/*
           <label htmlFor="work_start">Start of Working Hours</label>
           <input text="text" name="work_start" value="09:00"/>
           <label htmlFor="work_end">End of Working Hours</label>
           <input text="text" name="work_end" value="17:00"/><br/><br/>
+          */}
           {/* TODO: add non-working days (weekends) */}
           <label htmlFor="duration">Meeting Duration</label>
           <input text="text" name="duration" value="01:00"/><br/><br/>
-          <label htmlFor="time_zone">Time Zone</label>
-          <input text="text" name="time_zone" value="PST"/><br/><br/>
+          <label htmlFor="timezone">Time Zone</label>
+          <input text="text" name="timezone" value="America/Los_Angeles"/><br/><br/>
           <input type="submit" value="submit" />
         </form>
         <Event />
@@ -143,3 +147,4 @@ export default class App extends React.Component {
     );
   }
 }
+
