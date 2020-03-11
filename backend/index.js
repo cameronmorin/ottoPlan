@@ -372,7 +372,7 @@ async function getOwnBusy(auth, own_cal_ids, request_data, all_busy) {
         })
             .then(busy_times => {
                 //console.log('Response from Calendar API: ' + JSON.stringify(busy_times, null, 2) + '\n');
-                duration = "01:00";
+                duration = request_data.schedule_info.duration;
                 var user_busy = [];
 
                 /* busy_times comes back as a response body that contains each calendar's busy times as a list of objects with start and end
@@ -436,6 +436,7 @@ async function findWindow(auth, request_data, all_busy) {
         // Hard-coding 9-5 as working hours
 
         var search_start = parseDate(request_data.schedule_info.start_date);
+        var duration = request_data.schedule_info.duration;
         //search_start = new Date(search_start.getTime());
         //var test_date = new Date(search_start.getTime());
         //console.log('test_date: ' + test_date + '\tconverted: ' + test_date.toLocaleString("en-US", {timeZone: "America/Los_Angeles"}) + '; typeof: ' + typeof test_date + '\n');
