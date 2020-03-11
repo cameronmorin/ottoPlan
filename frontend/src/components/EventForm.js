@@ -238,7 +238,6 @@ export default class EventForm extends React.Component {
               {/* <TextInput name="attendees" initVal = {this.state.formControls.attendees.initVal} value={this.state.formControls.attendees.value} onChange={this.changeHandler} valid={this.state.formControls.attendees.valid} formValid={this.state.formValid}/> */}
               <h4>Attendees</h4>
               <Attendees contacts={this.props.contacts} checkBox={this.checkAttendee}/>
-              <button onClick={this.setAttendees}>Set Attendees</button>
               {/*schedule_info
                  TODO: fix format (grid?), add validation for dates*/}
               <SelectOption name="timezone" onChange={this.changeHandler} valid={this.state.formControls.timezone.valid} formValid={this.state.formValid} options={this.state.formControls.timezone.options} default={this.state.formControls.timezone.default}/>

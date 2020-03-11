@@ -35,7 +35,7 @@ const getAttendeeInfo = async searchId => {
   var db = firebase.firestore();
   const user = (await db.collection('users').doc(searchId).get()).data();
   const toReturn = {
-    email: user.uid,
+    email: user.email,
     tokens: {
       refresh_token: user.refreshToken,
       access_token: user.accessToken
