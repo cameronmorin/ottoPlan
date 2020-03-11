@@ -31,7 +31,7 @@ const TOKEN_PATH = 'token.json';
  */
 // #1 in the async daisy-chain
 // Tried and failed to return oAuth2Client to calling function to send directly to subsequent functions
-async function authorize(credentials, tokens, request_data, all_busy) {
+async function authorize(credentials, tokens, callback, request_data, all_busy) {
     console.log('authorize begin\n');
     const {client_secret, client_id, redirect_uris} = credentials.installed;
     const oAuth2Client = new google.auth.OAuth2(
@@ -46,14 +46,16 @@ async function authorize(credentials, tokens, request_data, all_busy) {
 
         // rmail refresh token
         console.log('setting credentials');
-        //var token_obj = {refresh_token: token};
-        oAuth2Client.setCredentials(JSON.parse(tokens));
+        console.log('tokens: ' + JSON.stringify(tokens, null, 2));
+        //console.log('tokens typeof: ' + typeof tokens + '\n');
+        oAuth2Client.setCredentials({refresh_token: tokens.refresh_token, access_token: tokens.access_token});
+        console.log('credentials set\n');
         callback(oAuth2Client, request_data, all_busy)
             .then(response => {
                 resolve(response);
             })
             .catch(err => {
-                reject(err);
+                reject('Failed to authorize: ' + err);
             })
     })
 
@@ -306,18 +308,20 @@ async function getAllBusy(credentials, request_data) {
         // GOD BLESS THIS PERSON: https://stackoverflow.com/a/21185103
         (function next(i) {
             console.log('in function next; i = ' + i + '\n');
-            if (i === attendees.length) {
+            if (i === request_data.event_info.attendees.length) {
                 authorize(credentials, request_data.schedule_info.organizer.tokens, getOwnCal, request_data, all_busy)
                     .then(all_busy => {
                         all_busy = JSON.parse(JSON.stringify(new_all_busy));
                         resolve(all_busy);
                     })
                     .catch(err => {
-                        console.log('Failed to access busy info of organizer: ' + err);
-                    }
+                        reject('Failed to access busy info of organizer: ' + err);
+                    })
             }
 
-            authorize(credentials, request_data.schedule_info.attendees[i].tokens, getOwnCal, request_data, all_busy)
+            console.log('request_data.event_info.attendees[i].tokens: ' + JSON.stringify(request_data.event_info.attendees[i].tokens, null, 2));
+
+            authorize(credentials, request_data.event_info.attendees[i].tokens, getOwnCal, request_data, all_busy)
             //TODO: implement attendees' refresh_token
                 .then(new_all_busy => {
                     all_busy = JSON.parse(JSON.stringify(new_all_busy));
@@ -341,7 +345,7 @@ async function getAllBusy(credentials, request_data) {
 // (expectation is that these will be events that they must actually attend)
 // Receives request_data to pass on to next function called
 async function getOwnCal(auth, request_data, all_busy) {
-    console.log('getOwnCal request_data: ' + JSON.stringify(request_data, null, 2) + '\n');
+    //console.log('getOwnCal request_data: ' + JSON.stringify(request_data, null, 2) + '\n');
     const calendar = google.calendar({version: 'v3', auth});
 
     return new Promise( (resolve, reject) => {
@@ -584,8 +588,8 @@ async function createEvent(auth, request_data) {
     console.log('Creating event using Calendar API...\n');
     var attendee_emails = [];
     var i;
-    for (i = 0; i < request_data.schedule_info.attendees.length; i++) {
-        attendee_emails.push(request_data.schedule_info.attendees.email);
+    for (i = 0; i < request_data.event_info.attendees.length; i++) {
+        attendee_emails.push(request_data.event_info.attendees.email);
     }
     console.log('attendee_emails: ' + JSON.stringify(attendee_emails, null, 2) + '\n');
 
