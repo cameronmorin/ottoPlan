@@ -40,16 +40,13 @@ async function authorize(credentials, tokens, callback, request_data, all_busy) 
     // No reject handled here because this won't be in the final code
     // Auth will be occuring in frontend
     return new Promise( (resolve, reject) => {
+        //console.log('setting credentials');
+        //console.log('auth tokens: ' + JSON.stringify(tokens, null, 2));
 
-        //var i;
-        //for (i = 0; i < 2; i++) {
-
-        // rmail refresh token
-        console.log('setting credentials');
-        console.log('tokens: ' + JSON.stringify(tokens, null, 2));
-        //console.log('tokens typeof: ' + typeof tokens + '\n');
+        //console.log('{refresh_token: AEu4IL0EdpcwSDTQhoKjE-XulztipcbvNSFneIL_8HkUROq7VUFErVc7WBlv3oe_NCVgxHrVrSv1J0BvJTga9uzNzBAXl6XKBFD3P-_2_7_M3HuPl8gVEwXvVREoVf8iG02LGMXcp70DJWFir0ILsgC2QjqL1Bh6qGObtV9R1uSMlRQ2EuCHlgotr7w4zKKT5TpxzNzhZhEKFVYW90VncMY-voyEuOQMJmquCcvpDMcpeV3aKKlFWUlDprFEANdgDfA77XloSaE9Zc0Z9jZbT7ZEytDKouzBsIkcoT3piwwUfzQ6N-HIt48udWosKfb0EBcxAoxl9_XWPILoVDAn9JgfDhlakQQBztPF_BvcaIAX9Uz6EuBRplFoOK1hmB3etup2w1eJK-M537Yn2qL6ANNFJGZ0jZ6heg, access_token: ya29.a0Adw1xeV8yMrK_sg2xG_a_LsBwUE5vs-C_vHYOsAPR_vfNG3id3aNhym9Pek__hMUrV_Hdz2mdoUyfE_CWJLCmwN6pYEKTQK0gjYoWc2AC4XpKcj-s9UAnCU25CiizpQlYNxYiitnUE3smyOfzSflmSLSOkStOkvpM2j4KlywS4YZ-B49}\n');
+        //oAuth2Client.setCredentials({refresh_token: 'AEu4IL1SOwJvJ5jtCOSgLCYl1Fcjmnc37F5JVRYJiTcdZpoxQ7AHWvYXZtRuvhwL7ZGhWQ5bwAyUZb5pWe6Z1DN5OtweuJiQpzRzxNGa9ur1CVn6rrsPZ3ndAxYFZ8uopWq2JaxbUV94gTO5BxQQRpX6vQpJDz96Rm5gQVZ5SokABzxFMJ_G6y3djHhrWaocZ_ZJTbuKmGYyaDCOhbuyeonkveP0XvN07EHcpnXZiiayzWCh54P8G8l9ngXQfeIJX7rAyAVNB0vPxhSI10xw_ozjK6U1f6XJnk7OdTc0kDSXgRJyxU-WDMCyb6fRw6s8cxV4Mav1cX7EWh3iRoUJ4D2iflgwpFYdBgMM0GI-e2eLQ-ewZUN8ReBEi9Rh-L5FEYKIfM0FSFX9cUHneDTxIvQT7iIskjuaOQ', access_token: 'ya29.a0Adw1xeUvRhny--RXO6FwZM1rB0gzLqG5r-lcfBpzeLUaD655NOnW5swe7RvllokRagw0BznTmUM_vNUQbNi-FvMG2bibSDLnyJEkwLMdPcwIcEQTykfCV6bf96r6NtXw_UowZjlEu6ITO4hb45n7Bxr2fQW7MY2qejCsbv7k51MjnOig'});
         oAuth2Client.setCredentials({refresh_token: tokens.refresh_token, access_token: tokens.access_token});
-        console.log('credentials set\n');
+        //console.log('credentials set\n');
         callback(oAuth2Client, request_data, all_busy)
             .then(response => {
                 resolve(response);
@@ -58,28 +55,6 @@ async function authorize(credentials, tokens, callback, request_data, all_busy) 
                 reject('Failed to authorize: ' + err);
             })
     })
-
-
-
-    /*
-        // Check if we have previously stored a token.
-        fs.readFile(TOKEN_PATH, (err, token) => {
-            // This line is incorrect and will be unnecessary after auth is handled in frontend
-            if (err) return getAccessToken(oAuth2Client, callback);
-            oAuth2Client.setCredentials(JSON.parse(token));
-
-            // Call scheduling function chain
-            callback(oAuth2Client, request_data, all_busy)
-                .then(event_info => {
-                    //console.log('authorize event_info: ' + JSON.stringify(event_info, null, 2) + '\n');
-                    resolve(event_info);
-                })
-                .catch(err => {
-                    reject(err);
-                })
-        });
-    });
-    */
 }
 
 /* Auth handled in frontend
@@ -127,6 +102,7 @@ app.post('/schedule_event', asyncHandler(async (req, res) => {
         //console.log('typeof content: ' + typeof content + '\n');
         //console.log('content: ' + content + '\n');
         //res.json(JSON.parse(content));
+        console.log('Calling scheduleEvent\n');
 
         scheduleEvent(req.body, JSON.parse(content))
             .then(event_info => {
@@ -134,34 +110,10 @@ app.post('/schedule_event', asyncHandler(async (req, res) => {
                 res.json(event_info);
             })
             .catch(err => {
-                console.log('Sending failure back to frontend...');
+                console.log('Sending failure back to frontend...', err);
                 res.json(err);
             })
     });
-
-    /*
-    // Load client secrets from a local file.
-    fs.readFile('credentials.json', (err, content) => {
-        if (err) return console.log('Error loading client secret file:', err, '\n');
-        // Authorize a client with credentials, then call the Google Calendar API.
-
-        // API-accessing function called from here
-        // authorize calls subsequent functions to look for available time slot and create event
-        // TODO: figure out how to authorize for each person
-        // Need auth for each attendee in order to access calendars/events for each
-        authorize(JSON.parse(content), scheduleEvent, req.body)
-            .then(event_info => {
-                //console.log('post event_info: ' + JSON.stringify(event_info, null, 2) + '\n');
-                console.log('Sending event_info back to frontend...');
-                res.json(event_info);
-            })
-            .catch(err => {
-                console.log('Sending failure back to frontend...');
-                res.json(err);
-            })
-    });
-    */
-
 }));
 
 /* Loops through list of attendees and calls functions to populate all_busy
@@ -177,7 +129,6 @@ async function scheduleEvent(request_data, credentials) {
     //console.log('credentials: ' + JSON.stringify(credentials) + '\n');
 
     //TODO: after attendees come in from frontend correctly, call workingHours from here instead of getAllBusy
-    return new Promise( (resolve, reject) => {
             //console.log('scheduleEvent Promise begin\n');
         /*
         var attendees = [];
@@ -193,8 +144,8 @@ async function scheduleEvent(request_data, credentials) {
 
         // Initialize all_busy with non-working hours/days
         //console.log('Calling workingHours\n');
-        var all_busy = [];
-        all_busy = workingHours(request_data);
+        //var all_busy = [];
+        //all_busy = workingHours(request_data);
         //console.log('scheduleEvent all_busy after working hours: ' + JSON.stringify(all_busy, null, 2) + '\n');
         /*
 
@@ -222,6 +173,7 @@ async function scheduleEvent(request_data, credentials) {
         }
     }
     */
+    return new Promise( (resolve, reject) => {
 
         getAllBusy(credentials, request_data)
             .then(all_busy => {
@@ -239,15 +191,6 @@ async function scheduleEvent(request_data, credentials) {
                     //request_data.event_start = all_busy[0].end;
                     //request_data.event_end = all_busy[1].start;
                     var attendees = [];
-                    // gmail refresh token
-                    //attendees.push('1//06ue5SnV-Ua2JCgYIARAAGAYSNwF-L9IrIbsANAwzjCyFRctMpX4eQnfWLpTRmH-3h6fu4nM0-nnRhVYvFzReBQ-hc-DeLp5a9d0');
-                    //attendees.push('AEu4IL1OhPZpdF6PQ6TtaG8rm3ZLnv_7r6IuJGOXK8tAtU5PRcxVvsywMr1LisWqnhjITwprYVGE8nM3VhIAtj2pxLuARogddcIrbzhPJ29PefYU6nbUX6DEnjI9-0kwPgQUiEND8Qm6qMZ-z2CXTpk2df66NL2VUFUW7zZyroAp5BXtv-VEcgvAvFdQkudFPoyoC_aNHcEPAzqPzVyPuqlKJhZC2L34Dke008HJLp-oXhs75j7czf9-1iAKhOmChfHCU9D7b4r3csBoYMhMTKDFuCP3Ips6Wuv8B4as3PumUs9fPuSfUSF6jdwMboACMjxTJ_78fjIK_ueHY0mrSySnKkfgAEM9GVaXIWzRYir6HjfxVsE67j7S1WjC02S5xA-h6bIhOJpzsA6bEkzkse9WBXgoa_xpFyeZX5I1ZJCaCt3xXSQJn11EKLwaIdcIdcamPgatUlZd');
-                    /*
-                    var obj = {refresh: 'AEu3IL1OhPZpdF6PQ6TtaG8rm3ZLnv_7r6IuJGOXK8tAtU5PRcxVvsywMr1LisWqnhjITwprYVGE8nM3VhIAtj2pxLuARogddcIrbzhPJ29PefYU6nbUX6DEnjI9-0kwPgQUiEND8Qm6qMZ-z2CXTpk2df66NL2VUFUW7zZyroAp5BXtv-VEcgvAvFdQkudFPoyoC_aNHcEPAzqPzVyPuqlKJhZC2L34Dke008HJLp-oXhs75j7czf9-1iAKhOmChfHCU9D7b4r3csBoYMhMTKDFuCP3Ips6Wuv8B4as3PumUs9fPuSfUSF6jdwMboACMjxTJ_78fjIK_ueHY0mrSySnKkfgAEM9GVaXIWzRYir6HjfxVsE67j7S1WjC02S5xA-h6bIhOJpzsA6bEkzkse9WBXgoa_xpFyeZX5I1ZJCaCt3xXSQJn11EKLwaIdcIdcamPgatUlZd', access: 'ya29.a0Adw1xeUvRhny--RXO6FwZM1rB0gzLqG5r-lcfBpzeLUaD655NOnW5swe7RvllokRagw0BznTmUM_vNUQbNi-FvMG2bibSDLnyJEkwLMdPcwIcEQTykfCV6bf96r6NtXw_UowZjlEu6ITO4hb45n7Bxr2fQW7MY2qejCsbv7k51MjnOig'}
-                    attendees.push(obj);
-                    */
-                    //attendees.push('AEu3IL0eJknM-ODSU0w36d4CdgB4-DA3oXom5FpaTqssIww-j4LF2ASw92mTP9JyO51uQ277DtMkc1NYakXk9PKPbXJCSzQ81FngKOiH7mXC34bO6DB45BXZXX80Dsnk_xn781xpmH62k8rlmmGEHgGa-apo8JxlJ-FUmTU0Q5y0fm6VZv5ygDwBaJoWwpykCjfj0GyFRm4OFILQ-JfZBCMiq266dEDYu2Fly-lrAtR4A2uyY4zITT-_891LNs-HzWexSF3feJlBTGnVWpzdmY8MUe51Y2Y0ugZeZtiyDaEu7cUx-dlR0QiALLvnjwuBBQIw9pGOwmkYHwwcgyOHjotOKmyBJDrUYgOgNqsVLl-BacRg6NWGToNTwXT_PFk5fmIfDIy7ltE8ZjmlayGe3zlkC1BxbKKnutiHivDqAEbg7tCIZU0X0yq4ZnmIpaxcDNVy1ywS_WwK');
-                    //attendees.push(request_data.gmail_refresh_token);
 
                     console.log('Calling findWindow\n');
 
@@ -261,7 +204,7 @@ async function scheduleEvent(request_data, credentials) {
                             resolve(event);
                         })
                         .catch(err => {
-                            reject(err);
+                            reject('Failed to find event window: ' + err);
                         })
                 }
                 else {
@@ -270,8 +213,6 @@ async function scheduleEvent(request_data, credentials) {
             }).catch(err => {
                 reject(err);
             })
-    }).catch(err => {
-        reject(err);
     })
 
 
@@ -285,7 +226,7 @@ async function scheduleEvent(request_data, credentials) {
                 reject(err);
             })
             */
-            }
+}
 
 async function getAllBusy(credentials, request_data) {
     return new Promise( (resolve, reject) => {
@@ -310,8 +251,9 @@ async function getAllBusy(credentials, request_data) {
             console.log('in function next; i = ' + i + '\n');
             if (i === request_data.event_info.attendees.length) {
                 authorize(credentials, request_data.schedule_info.organizer.tokens, getOwnCal, request_data, all_busy)
-                    .then(all_busy => {
+                    .then(new_all_busy => {
                         all_busy = JSON.parse(JSON.stringify(new_all_busy));
+                        console.log('FULL all_busy: ' + JSON.stringify(all_busy, null, 2) + '\n');
                         resolve(all_busy);
                     })
                     .catch(err => {
@@ -319,18 +261,20 @@ async function getAllBusy(credentials, request_data) {
                     })
             }
 
-            console.log('request_data.event_info.attendees[i].tokens: ' + JSON.stringify(request_data.event_info.attendees[i].tokens, null, 2));
+            else {
+                console.log('request_data.event_info.attendees[i].tokens: ' + JSON.stringify(request_data.event_info.attendees[i].tokens, null, 2));
 
-            authorize(credentials, request_data.event_info.attendees[i].tokens, getOwnCal, request_data, all_busy)
-            //TODO: implement attendees' refresh_token
-                .then(new_all_busy => {
-                    all_busy = JSON.parse(JSON.stringify(new_all_busy));
-                    next(++i);
-                })
-                .catch(err => {
-                    console.log('Failed during gathering of users\' busy times');
-                    reject(err);
-                })
+                authorize(credentials, request_data.event_info.attendees[i].tokens, getOwnCal, request_data, all_busy)
+                //TODO: implement attendees' refresh_token
+                    .then(new_all_busy => {
+                        all_busy = JSON.parse(JSON.stringify(new_all_busy));
+                        next(++i);
+                    })
+                    .catch(err => {
+                        console.log('Failed during gathering of users\' busy times');
+                        reject(err);
+                    })
+            }
         })(0);
     });
 }
@@ -379,7 +323,7 @@ async function getOwnCal(auth, request_data, all_busy) {
                         resolve(event_info);
                     })
                     .catch(err => {
-                        reject(err);
+                        reject('getOwnBusy failed: ' + err);
                     })
             }).catch(err => {
                 console.log(err.message, '\n');
@@ -427,7 +371,7 @@ async function getOwnBusy(auth, own_cal_ids, request_data, all_busy) {
             }
         })
             .then(busy_times => {
-                console.log('Response from Calendar API: ' + JSON.stringify(busy_times, null, 2) + '\n');
+                //console.log('Response from Calendar API: ' + JSON.stringify(busy_times, null, 2) + '\n');
                 duration = "01:00";
                 var user_busy = [];
 
@@ -463,7 +407,7 @@ async function getOwnBusy(auth, own_cal_ids, request_data, all_busy) {
                     user_busy.push(busy_slot);
                     */
                 }
-                //console.log('COMPLETE user_busy: ' + JSON.stringify(user_busy, null, 2) + '\n');
+                console.log('COMPLETE user_busy: ' + JSON.stringify(user_busy, null, 2) + '\n');
 
 
                 // TODO: this
@@ -491,11 +435,6 @@ async function findWindow(auth, request_data, all_busy) {
         // Hard-coding saturday and sunday as non-working days
         // Hard-coding 9-5 as working hours
 
-
-
-
-
-
         var search_start = parseDate(request_data.schedule_info.start_date);
         //search_start = new Date(search_start.getTime());
         //var test_date = new Date(search_start.getTime());
@@ -514,20 +453,16 @@ async function findWindow(auth, request_data, all_busy) {
             console.log('\tsearch_start.getDay(): ' + search_start.getDay() + '\n');
             console.log('\tsearch_start.getHours(): ' + search_start.getHours() + '\n');
 
-
-
-            // Available meeting time found
             if (gapOkay(search_start, parseDate(all_busy[i].start), duration)) {
                 
                 var end_date = new Date();
-                //console.log('typeof: ' + typeof end_time);
                 end_date.setTime(search_start.getTime() + toMSec(duration));
 
                 console.log('end_date.getHours(): ' + end_date.getHours() + '\n');
                 
                 // Check if end_date is outside of working hours
-                if (end_date.getHours() >= 17) {
-                    console.log('Ends outside of working hours: ' + end_date.getHours() + '\n');
+                if (end_date.getHours() >= 17 || end_date.getTime() > request_data.schedule_info.end_date) {
+                    console.log('Ends outside of working hours or search window: ' + end_date.getHours() + '\n');
                     search_start = parseDate(all_busy[i++].end);
                     continue;
                 }
@@ -562,7 +497,7 @@ async function findWindow(auth, request_data, all_busy) {
                     resolve(event);
                 })
                 .catch(err => {
-                    reject(err);
+                    reject('findWindow failure: ' + err);
                 })
         }
         else {
@@ -589,7 +524,8 @@ async function createEvent(auth, request_data) {
     var attendee_emails = [];
     var i;
     for (i = 0; i < request_data.event_info.attendees.length; i++) {
-        attendee_emails.push(request_data.event_info.attendees.email);
+        var email = {email: request_data.event_info.attendees[i].email};
+        attendee_emails.push(email);
     }
     console.log('attendee_emails: ' + JSON.stringify(attendee_emails, null, 2) + '\n');
 
@@ -642,7 +578,9 @@ async function createEvent(auth, request_data) {
                 //calendarId: 'aa2ab10qanobloa2g9eqh7i50o@group.calendar.google.com',
                 calendarId: 'primary',
                 resource: new_event,
-                sendNotifications: true,
+                //TODO REMOVE THIS
+                sendNotifications: false,
+                //sendNotifications: true,
             },
             function(err, created_event) {
                 if (err) {
@@ -650,8 +588,7 @@ async function createEvent(auth, request_data) {
                     //TODO: remove this
                     //event.success = "false";
                     //event.msg = err;
-                    console.log('createEvent returning failure...\n');
-                    reject(err);
+                    reject('createEvent returning failure...\n' + err);
                 }
                 console.log('Event created: %s', created_event.data.htmlLink, '\n');
 
@@ -724,15 +661,15 @@ function workingHours(request_data) {
     search_start.setMilliseconds(0);
     console.log('search_start: ' + search_start + '\n');
     var end_date = new Date(parseDate(request_data.schedule_info.end_date));
+    console.log('end_date: ' + end_date + '\n');
     end_date.setMilliseconds(0);
 
-    //var i = 0;
+    var i = 0;
     while (new Date(search_start).getTime() < new Date(end_date).getTime()) {
-        /*console.log('-------------------\nwhile loop #' + i + '\n');
+        console.log('-------------------\nwhile loop #' + i + '\n');
         console.log('search_start: ' + search_start + '\n');
-        console.log('parseDate(request_data.end_time): ' + parseDate(request_data.end_time) + '\n');
         i++;
-        */
+        
 
         var nonwork_start = new Date();
         nonwork_start.setTime(search_start.getTime());
@@ -746,8 +683,17 @@ function workingHours(request_data) {
         // If within Friday after 9am - Sunday, create new busy block until Monday @ 9am or end of search window (whichever is first)
         //console.log('getDay() = ' + search_start.getDay() + '; getHours() = ' + search_start.getHours());
 
-        if (search_start.getDay() == 0 || search_start.getDay() == 6 || (search_start.getDay() == 5 && search_start.getHours() >= 9)) {
-            //console.log('Weekend: ' + search_start.getDay() + '\n');
+        if (search_start >= parseDate(request_data.schedule_info.end_date)) {
+            console.log('start >= end_date\n');
+            search_start.setTime(parseDate(request_data.schedule_info.end_date));
+            search_start.setMilliseconds(0);
+            nonwork_end.setTime(end_date.getTime());
+            nonwork_end.setMilliseconds(0);
+            break;
+        }
+
+        else if (search_start.getDay() == 0 || search_start.getDay() == 6 || (search_start.getDay() == 5 && search_start.getHours() >= 9)) {
+            console.log('Weekend: ' + search_start.getDay() + '\n');
 
             // If the start of the search window is on a Friday within working hours, set the start of the block to be end of day Friday
             if (search_start.getDay() == 5 && search_start.getHours() < 17) {
@@ -757,27 +703,30 @@ function workingHours(request_data) {
                 nonwork_start.setSeconds(0);
                 nonwork_start.setMilliseconds(0);
             }
-            //console.log('nonwork_start: ' + nonwork_start.toLocaleString('en-US', {timeZone: 'America/Los_Angeles'}) + '\n');
+            console.log('nonwork_start: ' + nonwork_start.toLocaleString('en-US', {timeZone: 'America/Los_Angeles'}) + '\n');
 
 
             // Set the end to the next Monday (https://stackoverflow.com/a/33078673)
             nonwork_end.setDate(search_start.getDate() + ((1 + 7 - search_start.getDay()) % 7));
             nonwork_end.setHours(9);
-            //console.log('nonwork_end: ' + nonwork_end.toLocaleString('en-US', {timeZone: 'America/Los_Angeles'}) + '\n');
+            console.log('nonwork_end: ' + nonwork_end.toLocaleString('en-US', {timeZone: 'America/Los_Angeles'}) + '\n');
 
         }
         // Block out non-working hours of working days (Mon - Thurs)
         else {
-            //console.log('Weekday: ' + search_start.getDay() + '\n');
+            console.log('Weekday: ' + search_start.getDay() + '\n');
             // If the start of the search window is outside of working hours, create a new block until 9am
             // Don't need to adjust the start of the search window
             if (search_start.getHours() < 9) {
+                console.log('search_start.getHours() < 9\n');
                 nonwork_end.setHours(9);
                 nonwork_end.setMinutes(0);
                 nonwork_end.setSeconds(0);
                 nonwork_end.setMilliseconds(0);
             }
-            else {
+            // Don't create an end-of-day busy window after search window
+            else if (search_start.getDay() < end_date.getDay()) {
+                console.log('search_start.getHours() >= 9\n');
                 // Set start of window to be 5pm of current day
                 nonwork_start.setHours(17);
                 nonwork_start.setMinutes(0);
@@ -791,6 +740,11 @@ function workingHours(request_data) {
                 nonwork_end.setSeconds(0);
                 nonwork_end.setMilliseconds(0);
             }
+            else {
+                break;
+            }
+
+
 
         }
 
