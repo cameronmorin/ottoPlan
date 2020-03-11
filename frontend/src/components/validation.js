@@ -4,26 +4,25 @@ const validate = (value, rules) => {
     for (let rule in rules) {
         switch(rule) {
             case 'isRequired': isValid = isValid && requiredValidator(value); break;
+
+            case 'validTime': isValid = isValid && timeValidator(value); break;       
             
             default: isValid = true;
-
-            //add more requirements here
         }
     }
 
     return isValid;
 }
 
-/**
- * Check to confirm that feild is required
- * 
- * @param  value 
- * @return       
- */
-//makes sure there is something entered if question is required
 const requiredValidator = value => {
     return (value.trim() !== '');
     //return false;
+}
+
+const timeValidator = value => {
+    let re = new RegExp(/^\d{2}:\d{2}$/);
+
+    return (re.test(value));
 }
 
 export default validate;

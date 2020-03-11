@@ -8,7 +8,7 @@ import SelectOption from './SelectOption';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
-import { Modal, Button } from 'react-bootstrap'
+import { Modal, Button } from 'react-bootstrap';
 
 //TODO: find better way to init min/max
 const min = new Date();
@@ -18,7 +18,7 @@ const max = new Date();
 max.setHours(17);
 max.setMinutes(0);
 
-class EventForm extends React.Component {
+export default class EventForm extends React.Component {
     constructor(props) {
         super(props);
         this.state={
@@ -40,7 +40,7 @@ class EventForm extends React.Component {
                     valid: true,
                     touched: false,
                     validationRules: {
-                        isRequired: false
+                        isRequired: false,
                     },
                     from: 'event'
                 },
@@ -49,7 +49,7 @@ class EventForm extends React.Component {
                     valid: true,
                     touched: false,
                     validationRules: {
-                        isRequired: false
+                        isRequired: false,
                     },
                     from: 'event'
                 },    
@@ -67,20 +67,20 @@ class EventForm extends React.Component {
                     valid: false,
                     touched: false,
                     validationRules: {
-                        isRequired: true
+                        //isRequired: true,
+                        validTime: true,
                     },
-                    options: [
-                        {value: '15', label: '15 minutes'},
-                        {value: '30', label: '30 minutes'},
-                        {value: '45', label: '45 minutes'},
-                        {value: '60', label: '1 hour'},
-                        {value: '75', label: '1 hour 15 minutes '},
-                        {value: '90', label: '1 hour 30 minutes'},
-                        {value: '105', label: '1 hour 45 minutes'},
-                        {value: '120', label: '2 hours'},
-                    ],
+                    // options: [
+                    //     {value: '15', label: '15 minutes'},
+                    //     {value: '30', label: '30 minutes'},
+                    //     {value: '45', label: '45 minutes'},
+                    //     {value: '60', label: '1 hour'},
+                    //     {value: '75', label: '1 hour 15 minutes '},
+                    //     {value: '90', label: '1 hour 30 minutes'},
+                    //     {value: '105', label: '1 hour 45 minutes'},
+                    //     {value: '120', label: '2 hours'},
+                    // ],
                     from: 'schedule',
-                    duration: { hr: '', min: ''},
                 },
                 timezone: {
                     value: '',
@@ -104,7 +104,7 @@ class EventForm extends React.Component {
             },
 
             startDate: new Date(),
-            endDate: new Date()
+            endDate: new Date(),
         }
     }
 
@@ -121,7 +121,7 @@ class EventForm extends React.Component {
         };
 
         updatedFormElement.value = value;
-        updatedFormElement.valid = validate(this.state.formControls.value, this.state.formControls.validationRules)
+        updatedFormElement.valid = validate(updatedFormElement.value, updatedFormElement.validationRules);
 
         updatedControls[name] = updatedFormElement;
 
@@ -130,9 +130,8 @@ class EventForm extends React.Component {
 
     //handler for calendar selection
     changeStartHandler = date => {
-
         this.setState({
-            startDate: date
+            startDate: date,
         });
     };
 
@@ -155,19 +154,33 @@ class EventForm extends React.Component {
         const schedule_info = {};
         const data = {event_info, schedule_info};
 
-        //check for unfilled required questions
         let formValid = true;
+        
+        //check validity of form inputs
         for (let x in this.state.formControls) {
-            this.setState({valid: validate(this.state.formControls.value, this.state.formControls.validationRules)});
+            formValid = formValid && this.state.formControls[x].valid;
+
             if(this.state.formControls[x].valid === false) {
                 formValid=false;
                 break;
             }
         }
-        //set form's validity for error layout of inputs
+
+        //check validity of event duration
+        //TODO: add more error message for invalid event duration
+
+        let selectedStartTime = this.state.startDate.getHours() * 60 + this.state.startDate.getMinutes();
+        let selectedEndTime = this.state.endDate.getHours() * 60 + this.state.endDate.getMinutes();
+        let temp = this.state.formControls.event_duration.value;
+        let inputTime = parseInt(temp.substring(0,1)) * 60 + parseInt(temp.substring(3,4));
+
+        if (inputTime  > (selectedEndTime - selectedStartTime) && this.state.endDate < this.state.startDate) {
+            formValid = false;
+        }
+        
         
         if(formValid === false) {
-        this.setState({formValid: formValid});
+            this.setState({formValid: formValid});
             this.setState({ showError: true });
         }
         else {  //populate JSON for backend
@@ -177,16 +190,18 @@ class EventForm extends React.Component {
                 }
             }
 
-            data.schedule_info["duration"] = {hr: '', min: ''};
+            // //set up duration with appropriate format
 
-            let hour = -1;
-            let val = this.state.formControls["event_duration"].value
-            while (val > 0) {
-                val -= 59   ;
-                hour += 1;
-            }
-            data.schedule_info["duration"].hr = hour.toString();
-            data.schedule_info["duration"].min = (this.state.formControls["event_duration"].value % 60).toString();
+            // let hour = -1;
+            // let val = this.state.formControls["event_duration"].value
+            // while (val > 0) {
+            //     val -= 59   ;
+            //     hour += 1;
+            // }
+
+            // let hourStr = "0" + hour;
+            // data.schedule_info["duration"] = hourStr + ":" + (this.state.formControls["event_duration"].value % 60).toString();
+            data.schedule_info["duration"] = this.state.formControls["event_duration"].value.toString();
 
             data.schedule_info["start_date"] = this.state.startDate;
             data.schedule_info["end_date"] = this.state.endDate;
@@ -209,7 +224,7 @@ class EventForm extends React.Component {
                 <TextInput name="attendees" initVal = {this.state.formControls.attendees.initVal} value={this.state.formControls.attendees.value} onChange={this.changeHandler} valid={this.state.formControls.attendees.valid} formValid={this.state.formValid}/>
                 {/*schedule_info
                    TODO: fix format (grid?), add validation for dates*/}
-                <SelectOption name="timezone" onChange={this.changeHandler} valid={this.state.formControls.timezone.valid} formValid={this.state.formValid} options={this.state.formControls.timezone.options} default={this.state.formControls.timezone.default}/>
+                <SelectOption name="timezone" onChange={this.changeHandler} valid={this.state.formControls.timezone.valid} formValid={this.state.formValid} options={this.state.formControls.timezone.options} />
                 <label>Start Date</label>
                 <DatePicker 
                     selected={this.state.startDate} 
@@ -217,13 +232,13 @@ class EventForm extends React.Component {
                     inline
                     showMonthDropdown
                     showYearDropdown
-                    showTimeSelect
-                    minTime={min}
-                    maxTime={max}
-                    timeFormat="hh:mm aa"
-                    timeIntervals={15}
-                    timeCaption="Time"
-                    dateFormat="MMMM d, yyyy h:mm aa"    
+                    showTimeInput
+                    // minTime={min}
+                    // maxTime={max}
+                    //timeFormat="hh:mm aa"
+                    //timeIntervals={15}
+                    timeInputLabel="Time: "
+                    //dateFormat="MMMM d, yyyy h:mm aa"    
                     placeholderText="Select a starting date/time"
                 />
                 <label>End Date</label>
@@ -233,16 +248,17 @@ class EventForm extends React.Component {
                     inline
                     showMonthDropdown
                     showYearDropdown
-                    showTimeSelect
-                    minTime={min}
-                    maxTime={max}
-                    timeIntervals={15}
-                    timeCaption="Time"
-                    timeFormat="hh:mm aa"
-                    dateFormat="MMMM d, yyyy h:mm aa"    
+                    showTimeInput
+                    // minTime={min}
+                    // maxTime={max}
+                    //timeIntervals={15}
+                    timeInputLabel="Time:"
+                    //timeFormat="hh:mm aa"
+                    //dateFormat="MMMM d, yyyy h:mm aa"    
                     placeholderText="Select an ending date/time"
                 />
-                <SelectOption name="event_duration" hr={this.state.formControls.event_duration.duration.hr} min={this.state.formControls.event_duration.duration.min} onChange={this.changeHandler} label={this.state.formControls.event_duration.label} valid={this.state.formControls.event_duration.valid} formValid={this.state.formValid} options={this.state.formControls.event_duration.options} default={this.state.formControls.event_duration.default}/>
+                <TextInput name="event_duration" onChange={this.changeHandler} label={this.state.formControls.event_duration.label} valid={this.state.formControls.event_duration.valid} formValid={this.state.formValid} options={this.state.formControls.event_duration.options} />
+                {/* <SelectOption name="event_duration" hr={this.state.formControls.event_duration.duration.hr} min={this.state.formControls.event_duration.duration.min} onChange={this.changeHandler} label={this.state.formControls.event_duration.label} valid={this.state.formControls.event_duration.valid} formValid={this.state.formValid} options={this.state.formControls.event_duration.options} default={this.state.formControls.event_duration.default}/> */}
             
                 <button onClick={this.formSubmitHandler} > Submit </button>
             </div>
@@ -259,5 +275,3 @@ class EventForm extends React.Component {
         );
     }
 }
-
-export default EventForm;

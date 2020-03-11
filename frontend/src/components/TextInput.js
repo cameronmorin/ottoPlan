@@ -11,6 +11,7 @@ const TextInput = props => {
         showError = true;
     }
     
+
     const label = props.name.charAt(0).toUpperCase() + props.name.substring(1);
 
     return (
