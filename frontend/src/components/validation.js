@@ -20,7 +20,7 @@ const requiredValidator = value => {
 }
 
 const timeValidator = value => {
-    let re = new RegExp(/^\d{2}:\d{2}$/);
+    let re = new RegExp(/^([0-1]?[0-9]|2[0-4]):([0-5][0-9])(:[0-5][0-9])?$/);
 
     return (re.test(value));
 }
