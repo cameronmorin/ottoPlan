@@ -242,8 +242,15 @@ export default class EventForm extends React.Component {
             })
                 .then(response => response.json())
                 .then(result => {
-                    console.log('Success json: ', JSON.stringify(result));
-                    alert('Link: (THIS STILL DOESN\'T WORK)', JSON.stringify(result.data.htmLink, null, 2));
+                    console.log('Response JSON: ', JSON.stringify(result));
+                    // I can't figure out how to print the json stuff to the alert window
+                    if (result.status == 200) {
+                        alert('Event created');
+                    }
+                    else {
+                        alert('Error creating event: ' + result.statusText);
+                    }
+                    //alert('Link: (THIS STILL DOESN\'T WORK)', JSON.stringify(result.data.htmLink, null, 2));
                 })
                 .catch((err) => {
                     console.log('Error: ', err);

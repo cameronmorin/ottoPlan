@@ -52,7 +52,7 @@ async function authorize(credentials, tokens, callback, request_data, all_busy) 
                 resolve(response);
             })
             .catch(err => {
-                reject('Failed to authorize: ' + err);
+                reject(err);
             })
     })
 }
@@ -111,7 +111,9 @@ app.post('/schedule_event', asyncHandler(async (req, res) => {
             })
             .catch(err => {
                 console.log('Sending failure back to frontend...', err);
-                res.json(err);
+                // https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/418
+                var reply = { status: '418' , statusText: err }
+                res.json(reply);
             })
     });
 }));
