@@ -100,14 +100,17 @@ export default class EventForm extends React.Component {
     changeHandler = event => {
         const name = event.target.name;
         const value = event.target.value;
+        
         const updatedControls = {
             ...this.state.formControls
         };
+        
         const updatedFormElement = {
             ...updatedControls[name]
         };
+
         updatedFormElement.value = value;
-        console.log('updatedFormElement: ' + JSON.stringify(updatedFormElement, null, 2) + '\n');
+        // console.log('updatedFormElement: ' + JSON.stringify(updatedFormElement, null, 2) + '\n');
         //////////////////////
         updatedFormElement.valid = validate(updatedFormElement.value, updatedFormElement.validationRules);
         //updatedFormElement.valid = validate(this.state.formControls.value, this.state.formControls.validationRules)
@@ -298,7 +301,7 @@ export default class EventForm extends React.Component {
             // dateFormat="MMMM d, yyyy h:mm aa"    
             placeholderText="Select an ending date/time"
             />
-            <TextInput name="Event Duration (hh:mm)" onChange={this.changeHandler} label={this.state.formControls.event_duration.label} valid={this.state.formControls.event_duration.valid} formValid={this.state.formValid} options={this.state.formControls.event_duration.options} />
+            <TextInput name="event_duration" onChange={this.changeHandler} label={this.state.formControls.event_duration.label} valid={this.state.formControls.event_duration.valid} formValid={this.state.formValid} options={this.state.formControls.event_duration.options} />
             {/* <SelectOption name="event_duration" hr={this.state.formControls.event_duration.duration.hr} min={this.state.formControls.event_duration.duration.min} onChange={this.changeHandler} label={this.state.formControls.event_duration.label} valid={this.state.formControls.event_duration.valid} formValid={this.state.formValid} options={this.state.formControls.event_duration.options} default={this.state.formControls.event_duration.default}/> */}
 
             <button onClick={this.formSubmitHandler} > Submit </button>
