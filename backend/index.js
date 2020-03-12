@@ -16,10 +16,6 @@ const SCOPES = [
     'https://www.googleapis.com/auth/calendar.readonly',
     'https://www.googleapis.com/auth/calendar.events'
 ];
-// The file token.json stores the user's access and refresh tokens, and is
-// created automatically when the authorization flow completes for the first
-// time.
-const TOKEN_PATH = 'token.json';
 
 /**
  * Create an OAuth2 client with the given credentials, and then execute the
@@ -27,6 +23,7 @@ const TOKEN_PATH = 'token.json';
  * @param {Object} credentials The authorization client credentials.
  * @param {function} callback The callback to call with the authorized client.
  */
+// Tried and failed to return oAuth2Client to calling function to send directly to subsequent functions
 async function authorize(credentials, tokens, callback, request_data, all_busy) {
     console.log('authorize begin\n');
     const {client_secret, client_id, redirect_uris} = credentials.installed;
@@ -55,9 +52,6 @@ app.post('/schedule_event', asyncHandler(async (req, res) => {
 
     fs.readFile('credentials.json', (err, content) => {
         if (err) res.json('Error loading client secret file:', err, '\n');
-        //console.log('typeof content: ' + typeof content + '\n');
-        //console.log('content: ' + content + '\n');
-        //res.json(JSON.parse(content));
         console.log('Calling scheduleEvent\n');
 
         scheduleEvent(req.body, JSON.parse(content))
@@ -81,7 +75,6 @@ app.post('/schedule_event', asyncHandler(async (req, res) => {
  */
 // TODO: remove this if unnecessary OR utilize it to manage multiple users' calendars
 async function scheduleEvent(request_data, credentials) {
-
     return new Promise( (resolve, reject) => {
 
         getAllBusy(credentials, request_data)
@@ -108,6 +101,7 @@ async function scheduleEvent(request_data, credentials) {
     })
 }
 
+// Generate a list of everyone's busy times
 async function getAllBusy(credentials, request_data) {
     return new Promise( (resolve, reject) => {
         var all_busy = [];
@@ -165,7 +159,6 @@ async function getOwnCal(auth, request_data, all_busy) {
         var calendars_list = {};
         calendar.calendarList.list()
             .then(resp => {
-                //console.log(resp.data.items);
                 calendars_list = resp.data.items;
                 // Create list of calendars owned by user
                 var own_cal_ids = [];
@@ -178,6 +171,12 @@ async function getOwnCal(auth, request_data, all_busy) {
                         own_cal_ids.push(id_obj);
                         //console.log('calendar: ' + calendars_list[key].summary + '; id: ' + calendars_list[key].id + '\n');
                     }
+                    /* No longer using ottoPlan calendar to reduce permissions
+                    // Search for existing ottoPlan calendar
+                    if (calendars_list[key].summary == 'ottoPlan Meetings') {
+                        otto_cal_ID = calendars_list[key].id;
+                    }
+                    */
                 }
 
                 getOwnBusy(auth, own_cal_ids, request_data, all_busy)
@@ -195,10 +194,19 @@ async function getOwnCal(auth, request_data, all_busy) {
 
 }
 
+
 // Creates list of owned events using start/end time in request_data
 // Calls createEvent to schedule the event
 async function getOwnBusy(auth, own_cal_ids, request_data, all_busy) {
     const calendar = google.calendar({version: 'v3', auth});
+
+    /* No longer creating/using ottoPlan calendar to reduce permissions
+    // If no ottoPlan calendar, create one
+    if (otto_cal_ID == '') {
+        otto_cal_ID = await createCal(auth)
+    }
+    */
+
     console.log('Fetching user\'s busy times from Calendar API...\n');
 
     return new Promise( (resolve, reject) => {
@@ -237,15 +245,14 @@ async function getOwnBusy(auth, own_cal_ids, request_data, all_busy) {
                     }
                     //console.log('user_busy after[' + curr_id + ' = ' + i + ']: ' + JSON.stringify(user_busy, null, 2) + '\n');
                 }
-                console.log('Complete busy times for user: ' + JSON.stringify(user_busy, null, 2) + '\n');
+                console.log('COMPLETE user_busy: ' + JSON.stringify(user_busy, null, 2) + '\n');
 
-
-                // TODO: this
                 // Merge user busy_times with all_busy and return the new all_busy
                 all_busy = merge_busy(all_busy, user_busy, duration);
                 //console.log('getOwnBusy all_busy: ' + JSON.stringify(all_busy, null, 2) + '\n');
 
                 resolve(all_busy);
+
             }).catch(err => {
                 reject('Error contacting Calendar API: ' + err);
             });
@@ -271,6 +278,7 @@ async function findWindow(auth, request_data, all_busy) {
             console.log('\tsearch_start.getDay(): ' + search_start.getDay() + '\n');
             console.log('\tsearch_start.getHours(): ' + search_start.getHours() + '\n');
 
+
             if (gapOkay(search_start, parseDate(all_busy[i].start), duration)) {
                 
                 var end_time = new Date();
@@ -279,17 +287,22 @@ async function findWindow(auth, request_data, all_busy) {
                 console.log('end_time.getHours(): ' + end_time.getHours() + '\n');
                 
                 // Check if end_timeis outside of working hours
-                if (end_time.getHours() > 17 || end_time.getTime() > parseDate(request_data.schedule_info.end_date).getTime()) {
+                if (end_time.getHours() < 9 || end_time.getHours() > 17 || end_time.getTime() > parseDate(request_data.schedule_info.end_date).getTime()) {
                     console.log('Ends outside of working hours or search window: ' + end_time.getHours() + '\n');
                     search_start = parseDate(all_busy[i++].end);
                     continue;
                 }
 
-                // Time found; break to call createEvent
+
+                // Valid event window found; break to call createEvent
                 request_data.event_start = ISODateString(search_start);
                 console.log('request_data.event_start: ' + request_data.event_start);
+
+                //console.log('end_time + ms = ' + end_time + '; typeof: ' + typeof end_time);
+
                 request_data.event_end = ISODateString(end_time);
                 console.log('request_data.event_end: ' + request_data.event_end + '\n');
+
 
                 time_found = true;
                 break;
@@ -319,9 +332,8 @@ async function findWindow(auth, request_data, all_busy) {
     console.log('Ending findWindow...\n');
 }
 
-/* Converts a Date object to RFC 3339 format
- * https://stackoverflow.com/a/7244288
-*/
+/* Converts a Date() object to RFC 3339 format
+ * https://stackoverflow.com/a/7244288 */
 function ISODateString(d){
      function pad(n){return n<10 ? '0'+n : n}
      return d.getUTCFullYear()+'-'
@@ -334,16 +346,16 @@ function ISODateString(d){
 
 async function createEvent(auth, request_data) {
     console.log('Creating event using Calendar API...\n');
+
+    // Create list of attendee emails that can be sent to Google calendar API
     var attendee_emails = [];
     var i;
-    // Create a list of objects containing the attendees' emails
     for (i = 0; i < request_data.event_info.attendees.length; i++) {
         var email = {email: request_data.event_info.attendees[i].email};
         attendee_emails.push(email);
     }
-    console.log('attendee_emails: ' + JSON.stringify(attendee_emails, null, 2) + '\n');
+    //console.log('attendee_emails: ' + JSON.stringify(attendee_emails, null, 2) + '\n');
 
-    //console.log(own_events);
     const calendar = google.calendar({version: 'v3', auth});
     var new_event = {
         summary: request_data.event_info.summary,
@@ -351,8 +363,6 @@ async function createEvent(auth, request_data) {
         description: request_data.event_info.description,
         start: {
             dateTime: request_data.event_start,
-            //timeZone: 'America/Los_Angeles'
-            //timeZone: request_data.scheduling_info.timezone
         },
         end: {
             dateTime: request_data.event_end,
@@ -389,8 +399,6 @@ async function createEvent(auth, request_data) {
                     reject('createEvent returning failure...\n' + err);
                 }
                 console.log('Event created: %s', created_event.data.htmlLink, '\n');
-
-                console.log('createEvent returning success...\n');
                 resolve(created_event);
             }
         );
@@ -446,17 +454,17 @@ function toMSec(duration) {
 // Populates an array to block out non-working hours
 // TODO: adjust this to handle time zones (only using user's browser's time zone for now)
 function workingHours(request_data) {
-    console.log('Start of workingHours\n');
+    //console.log('Start of workingHours\n');
 
     var working_hours = [];
 
     // Must set milliseconds to 0 otherwise it defaults to some non-zero value
-    console.log('start_date: ' + request_data.schedule_info.start_date + '\n');
+    //console.log('start_date: ' + request_data.schedule_info.start_date + '\n');
     var search_start = parseDate(request_data.schedule_info.start_date);
     search_start.setMilliseconds(0);
-    console.log('search_start: ' + search_start + '\n');
+    //console.log('search_start: ' + search_start + '\n');
     var end_date = new Date(parseDate(request_data.schedule_info.end_date));
-    console.log('end_date: ' + end_date + '\n');
+    //console.log('end_date: ' + end_date + '\n');
     end_date.setMilliseconds(0);
 
     // If the end_date is not blocked out, create a block for it at the end
@@ -512,6 +520,8 @@ function workingHours(request_data) {
         // Block out non-working hours of working days (Mon - Thurs)
         else {
             //console.log('Weekday: ' + search_start.getDay() + '\n');
+            //console.log('search_start.getDate(): ' + search_start.getDate() + ';end_date.getDate(): ' + end_date.getDate() + '\n');
+            //console.log('search_start.getHours(): ' + search_start.getHours() + ';end_date.getHours(): ' + end_date.getHours() + '\n');
             // If the start of the search window is outside of working hours, create a new block until 9am
             // Don't need to adjust the start of the search window
             if (search_start.getHours() < 9) {
@@ -522,7 +532,8 @@ function workingHours(request_data) {
                 nonwork_end.setMilliseconds(0);
             }
             // Don't create an end-of-day busy window after search window
-            else if (search_start.getDay() < end_date.getDay()) {
+            // TODO: this doesn't handle weekends that start at end of month and go to new month
+            else if (search_start.getDate() < end_date.getDate() || end_date.getHours() < 17) {
                 //console.log('search_start.getHours() >= 9\n');
                 // Set start of window to be 5pm of current day
                 nonwork_start.setHours(17);
@@ -540,6 +551,8 @@ function workingHours(request_data) {
             else {
                 break;
             }
+
+
 
         }
 
@@ -574,7 +587,7 @@ function workingHours(request_data) {
         working_hours.push(block_day);
     }
 
-    console.log('Complete working_hours: ' + JSON.stringify(working_hours, null, 2) + '\n');
+    console.log('working_hours: ' + JSON.stringify(working_hours, null, 2) + '\n');
     return working_hours;
 }
 
@@ -614,12 +627,10 @@ function merge_busy(all_busy, user_busy, duration) {
 
         // all_busy[i] starts before or at same time as user_busy[j]
         if (all_busy_start < user_busy_start) {
-        //if (startsEarlier(all_busy[i].start, user_busy[j].start)) {
             
             // Case 1: busy windows don't overlap
             // Check that all_busy[i].end is before or at same time as user_busy[j].start
             if (all_busy_end < user_busy_start) {
-            //if (startsEarlier(all_busy[i].end, user_busy[j].start)) {
                 
                 // If gap between times is >= duration, push all_busy[i]
                 // (Don't push user_busy[j] yet; need to check if it overlaps with next all_busy event first)
@@ -637,8 +648,6 @@ function merge_busy(all_busy, user_busy, duration) {
                     //console.log('\tuser_busy[j].end = ' + user_busy[j].end);
                     all_busy[i].end = user_busy[j++].end;
                     //console.log('new all_busy[j].end = ' + all_busy[i].end + '\n');
-
-                    //new_busy.push(all_busy[i++]);
                 }
             }
             
@@ -651,6 +660,7 @@ function merge_busy(all_busy, user_busy, duration) {
                 // all_busy[i] starts before or at same time as user_busy[j]
                 // Determine which end is later
                 if (all_busy_end < user_busy_end) {
+                //if (startsEarlier(all_busy[i].end, user_busy[j].end)) {
                     // user_busy ends later; edit start time and increment all_busy
                     //console.log('periods overlap\n\tuser_busy[j].start = ' + user_busy_start);
                     //console.log('\tall_busy[i].start = ' + all_busy[i].start);
@@ -673,7 +683,6 @@ function merge_busy(all_busy, user_busy, duration) {
             // Case 1: busy windows don't overlap
             // Check that user_busy[j].end is before or at same time as all_busy[i].start
             if (user_busy_end < all_busy_start) {
-            //if (startsEarlier(user_busy[j].end, all_busy[i].start)) {
                 
                 // If gap between times is >= duration, push user_busy[j]
                 // (Don't push all_busy[i] yet; need to check if it overlaps with next all_busy event first)
@@ -707,7 +716,6 @@ function merge_busy(all_busy, user_busy, duration) {
                 //console.log('\tall_busy[i].end = ' + all_busy[i].end);
 
                 if (user_busy_end < all_busy_end) {
-                //if (startsEarlier(user_busy[j].end, all_busy[i].end)) {
                     // all_busy ends later; edit start time and increment user_busy
 
                     all_busy[i].start = user_busy[j++].start;
