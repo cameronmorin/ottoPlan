@@ -55,19 +55,19 @@ export default class EventForm extends React.Component {
             value: '',
             valid: false,
             touched: false,
-            validationRules: {isRequired: true},
-            options: [
-              {value: '15', label: '15 minutes'},
-              {value: '30', label: '30 minutes'},
-              {value: '45', label: '45 minutes'},
-              {value: '60', label: '1 hour'},
-              {value: '75', label: '1 hour 15 minutes '},
-              {value: '90', label: '1 hour 30 minutes'},
-              {value: '105', label: '1 hour 45 minutes'},
-              {value: '120', label: '2 hours'},
-            ],
+            validationRules: {validTime: true},
+            // options: [
+            //   {value: '15', label: '15 minutes'},
+            //   {value: '30', label: '30 minutes'},
+            //   {value: '45', label: '45 minutes'},
+            //   {value: '60', label: '1 hour'},
+            //   {value: '75', label: '1 hour 15 minutes '},
+            //   {value: '90', label: '1 hour 30 minutes'},
+            //   {value: '105', label: '1 hour 45 minutes'},
+            //   {value: '120', label: '2 hours'},
+            // ],
             from: 'schedule',
-            duration: { hr: '', min: ''},
+            // duration: { hr: '', min: ''},
           },
           timezone: {
             value: '',
@@ -104,7 +104,7 @@ export default class EventForm extends React.Component {
         ...updatedControls[name]
       };
       updatedFormElement.value = value;
-      updatedFormElement.valid = validate(this.state.formControls.value, this.state.formControls.validationRules)
+      updatedFormElement.valid = validate(updatedFormElement.value, updatedFormElement.validationRules)
       
       updatedControls[name] = updatedFormElement;
       
@@ -188,15 +188,16 @@ export default class EventForm extends React.Component {
             data.event_info[y] = this.state.formControls[y].value;
           }
         }
-        data.schedule_info["duration"] = {hr: '', min: ''};
-        let hour = -1;
-        let val = this.state.formControls["event_duration"].value
-        while (val > 0) {
-          val -= 59   ;
-          hour += 1;
-        }
-        data.schedule_info["duration"].hr = hour.toString();
-        data.schedule_info["duration"].min = (this.state.formControls["event_duration"].value % 60).toString();
+        
+        // let hour = -1;
+        // let val = this.state.formControls["event_duration"].value
+        // while (val > 0) {
+        //   val -= 59   ;
+        //   hour += 1;
+        // }
+        // data.schedule_info["duration"].hr = hour.toString();
+        // data.schedule_info["duration"].min = (this.state.formControls["event_duration"].value % 60).toString();
+        data.schedule_info["duration"] = this.state.formControls["event_duration"].value.toString();
         data.schedule_info["start_date"] = this.state.startDate;
         data.schedule_info["end_date"] = this.state.endDate;
         data.schedule_info["timezone"] = this.state.formControls["timezone"].value;
@@ -257,8 +258,8 @@ export default class EventForm extends React.Component {
                 dateFormat="MMMM d, yyyy h:mm aa"    
                 placeholderText="Select an ending date/time"
               />
-              <SelectOption name="event_duration" hr={this.state.formControls.event_duration.duration.hr} min={this.state.formControls.event_duration.duration.min} onChange={this.changeHandler} label={this.state.formControls.event_duration.label} valid={this.state.formControls.event_duration.valid} formValid={this.state.formValid} options={this.state.formControls.event_duration.options} default={this.state.formControls.event_duration.default}/>
-              
+              {/* <SelectOption name="event_duration" hr={this.state.formControls.event_duration.duration.hr} min={this.state.formControls.event_duration.duration.min} onChange={this.changeHandler} label={this.state.formControls.event_duration.label} valid={this.state.formControls.event_duration.valid} formValid={this.state.formValid} options={this.state.formControls.event_duration.options} default={this.state.formControls.event_duration.default}/> */}
+              <TextInput name="event_duration" onChange={this.changeHandler} label={this.state.formControls.event_duration.label} valid={this.state.formControls.event_duration.valid} formValid={this.state.formValid} />
               <button onClick={this.formSubmitHandler} > Submit </button>
             </div>
             <Modal show={this.state.showError} onHide={this.handleModalClose}>

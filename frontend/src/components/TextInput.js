@@ -12,7 +12,7 @@ const TextInput = props => {
     }
     
 
-    const label = props.name.charAt(0).toUpperCase() + props.name.substring(1);
+    const label = (props.name.charAt(0).toUpperCase() + props.name.substring(1)).replace('_', ' ');
 
     return (
         <div classname="form-group">

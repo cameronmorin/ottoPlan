@@ -3,9 +3,10 @@ const validate = (value, rules) => {
 
     for (let rule in rules) {
         switch(rule) {
+            case 'validTime': isValid = isValid && timeValidator(value); break;       
+
             case 'isRequired': isValid = isValid && requiredValidator(value); break;
 
-            case 'validTime': isValid = isValid && timeValidator(value); break;       
             
             default: isValid = true;
         }
