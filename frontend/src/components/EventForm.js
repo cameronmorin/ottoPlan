@@ -167,7 +167,7 @@ export default class EventForm extends React.Component {
         }
 
         //check validity of event duration
-        //TODO: add more error message for invalid event duration
+        //TODO: add more error message for invalid event duration   
 
         let selectedStartTime = this.state.startDate.getHours() * 60 + this.state.startDate.getMinutes();
         let selectedEndTime = this.state.endDate.getHours() * 60 + this.state.endDate.getMinutes();
