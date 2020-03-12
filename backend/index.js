@@ -456,14 +456,17 @@ async function findWindow(auth, request_data, all_busy) {
 
             if (gapOkay(search_start, parseDate(all_busy[i].start), duration)) {
                 
-                var end_date = new Date();
-                end_date.setTime(search_start.getTime() + toMSec(duration));
+                var end_time = new Date();
+                end_time.setTime(search_start.getTime() + toMSec(duration));
 
-                console.log('end_date.getHours(): ' + end_date.getHours() + '\n');
+                console.log('end_time.getHours(): ' + end_time.getHours() + '\n');
                 
-                // Check if end_date is outside of working hours
-                if (end_date.getHours() >= 17 || end_date.getTime() > request_data.schedule_info.end_date) {
-                    console.log('Ends outside of working hours or search window: ' + end_date.getHours() + '\n');
+                // Check if end_timeis outside of working hours
+                if (end_time.getHours() > 17 || end_time.getTime() > parseDate(request_data.schedule_info.end_date).getTime()) {
+                    console.log('Ends outside of working hours or search window: ' + end_time.getHours() + '\n');
+                    //if (i == all_busy.length) {
+                    //    break;
+                    //}
                     search_start = parseDate(all_busy[i++].end);
                     continue;
                 }
@@ -476,7 +479,7 @@ async function findWindow(auth, request_data, all_busy) {
 
                 //console.log('end_time + ms = ' + end_time + '; typeof: ' + typeof end_time);
 
-                request_data.event_end = ISODateString(end_date);
+                request_data.event_end = ISODateString(end_time);
                 console.log('request_data.event_end: ' + request_data.event_end + '\n');
 
 
@@ -486,6 +489,9 @@ async function findWindow(auth, request_data, all_busy) {
 
             // Keep looking for available meeting time
             else {
+                //if (i == all_busy.length) {
+                //    break;
+                //}
                 search_start = parseDate(all_busy[i++].end);
             }
         }
@@ -579,9 +585,8 @@ async function createEvent(auth, request_data) {
                 //calendarId: 'aa2ab10qanobloa2g9eqh7i50o@group.calendar.google.com',
                 calendarId: 'primary',
                 resource: new_event,
-                //TODO REMOVE THIS
-                sendNotifications: false,
-                //sendNotifications: true,
+                //sendNotifications: false,
+                sendNotifications: true,
             },
             function(err, created_event) {
                 if (err) {
@@ -665,6 +670,8 @@ function workingHours(request_data) {
     console.log('end_date: ' + end_date + '\n');
     end_date.setMilliseconds(0);
 
+    // If the end_date is not blocked out, create a block for it at the end
+    var end_blocked = false;
     var i = 0;
     while (new Date(search_start).getTime() < new Date(end_date).getTime()) {
         console.log('-------------------\nwhile loop #' + i + '\n');
@@ -755,6 +762,7 @@ function workingHours(request_data) {
         if (nonwork_end > parseDate(request_data.schedule_info.end_date)) {
             nonwork_end.setTime(end_date.getTime());
             nonwork_end.setMilliseconds(0);
+            end_blocked = true;
         }
         //console.log('nonwork_start: ' + nonwork_start + '\n');
         //console.log('nonwork_end: ' + nonwork_end + '\n');
@@ -769,6 +777,14 @@ function workingHours(request_data) {
         working_hours.push(block_day);
         search_start.setTime(nonwork_end.getTime());
         search_start.setMilliseconds(0);
+    }
+
+    if (!end_blocked) {
+        var block_day = {
+            start: request_data.schedule_info.end_date,
+            end: request_data.schedule_info.end_date
+        }
+        working_hours.push(block_day);
     }
 
     console.log('working_hours: ' + JSON.stringify(working_hours, null, 2) + '\n');
