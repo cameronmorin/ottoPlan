@@ -247,7 +247,7 @@ export default class EventForm extends React.Component {
             {/*schedule_info
                  TODO: fix format (grid?), add validation for dates*/}
             <SelectOption name="timezone" onChange={this.changeHandler} valid={this.state.formControls.timezone.valid} formValid={this.state.formValid} options={this.state.formControls.timezone.options} default={this.state.formControls.timezone.default}/>
-            <label>Start Date</label>
+            <label>Start date</label>
             <DatePicker 
             className="calendar"
             selected={this.state.startDate} 
@@ -259,7 +259,7 @@ export default class EventForm extends React.Component {
             timeCaption="Time:" 
             placeholderText="Select a starting date/time"
             />
-            <label>End Date</label>
+            <label>End date</label>
             <DatePicker 
             className="calendar"
             selected={this.state.endDate} 
@@ -271,7 +271,7 @@ export default class EventForm extends React.Component {
             timeCaption="Time Governor"  
             placeholderText="Select an ending date/time"
             />
-            <TextInput name="event_duration" onChange={this.changeHandler} label={this.state.formControls.event_duration.label} valid={this.state.formControls.event_duration.valid} formValid={this.state.formValid} options={this.state.formControls.event_duration.options} />
+            <TextInput name="event_duration" onChange={this.changeHandler} label={this.state.formControls.event_duration.label} valid={this.state.formControls.event_duration.valid} formValid={this.state.formValid} options={this.state.formControls.event_duration.options} placeholder={"(HH:MM)"} onFocus={(e) => e.target.placeholder = ""} onBlur={(e => e.target.placeholder = "(HH:MM)")}/>
 
             <button onClick={this.formSubmitHandler} > Submit </button>
             </div>

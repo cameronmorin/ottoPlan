@@ -13,9 +13,6 @@ const TextInput = props => {
 
     let label = (props.name.charAt(0).toUpperCase() + props.name.substring(1)).replace('_', ' ');
 
-    //add specifications for event duration label
-    if (props.name === 'event_duration') label = label.concat(" (hh:mm)");
-
     return (
         <div classname="form-group">
             <label>{label}</label>
