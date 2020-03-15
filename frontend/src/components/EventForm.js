@@ -233,7 +233,7 @@ export default class EventForm extends React.Component {
                 inline
                 showMonthDropdown
                 showYearDropdown
-                showTimeSelect
+                showTimeInput
                 minTime={min}
                 maxTime={max}
                 timeFormat="hh:mm aa"
@@ -249,7 +249,7 @@ export default class EventForm extends React.Component {
                 inline
                 showMonthDropdown
                 showYearDropdown
-                showTimeSelect
+                showTimeInput
                 minTime={min}
                 maxTime={max}
                 timeIntervals={15}
