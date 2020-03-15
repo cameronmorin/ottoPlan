@@ -87,3 +87,9 @@
   max-height: 100vh;
   overflow-y: scroll;
 }
+
+.calendar {
+  font-family: 'Montserrat';
+  max-height: 10vh;
+}
+

@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import firebase from "firebase";
 import "../style/sidebar.css";
+import { Modal } from 'react-bootstrap';
+
+import EventForm from './EventForm'
 
 // Import Material Components
 import List from "@material-ui/core/List";
@@ -9,7 +12,6 @@ import Divider from "@material-ui/core/Divider";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 import ExpandLessIcon from "@material-ui/icons/ExpandLess";
 import Collapse from "@material-ui/core/Collapse";
-// import ListItemText from "@material-ui/core/ListItemText";
 
 // Import Material Icons
 import HomeIcon from '@material-ui/icons/Home';
@@ -20,11 +22,6 @@ import SignoutIcon from '@material-ui/icons/ExitToApp';
 import EventIcon from '@material-ui/icons/Event';
 import NotifIcon from '@material-ui/icons/Notifications';
 import UnreadIcon from '@material-ui/icons/NotificationImportant';
-
-import { Modal } from 'react-bootstrap';
-
-import EventForm from './EventForm'
-
 
 var unread = false;
 const items = [
