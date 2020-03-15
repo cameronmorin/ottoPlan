@@ -4,49 +4,16 @@ const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: false}));
 app.use(bodyParser.json());
 const asyncHandler = require('express-async-handler');
-
-const port = 5000;
-
 const fs = require('fs');
 const readline = require('readline');
 const {google} = require('googleapis');
-
-// If modifying these scopes, delete token.json.
-const SCOPES = [
-    'https://www.googleapis.com/auth/calendar.readonly',
-    'https://www.googleapis.com/auth/calendar.events'
-];
-
-/**
- * Create an OAuth2 client with the given credentials, and then execute the
- * given callback function.
- * @param {Object} credentials The authorization client credentials.
- * @param {function} callback The callback to call with the authorized client.
- */
-// Tried and failed to return oAuth2Client to calling function to send directly to subsequent functions
-async function authorize(credentials, tokens, callback, request_data, all_busy) {
-    console.log('authorize begin\n');
-    const {client_secret, client_id, redirect_uris} = credentials.installed;
-    const oAuth2Client = new google.auth.OAuth2(
-        client_id, client_secret, redirect_uris[0]);
-
-    return new Promise( (resolve, reject) => {
-        oAuth2Client.setCredentials({refresh_token: tokens.refresh_token, access_token: tokens.access_token});
-        callback(oAuth2Client, request_data, all_busy)
-            .then(response => {
-                resolve(response);
-            })
-            .catch(err => {
-                reject(err);
-            })
-    })
-}
+const port = 5000;
 
 app.listen(port, () => console.log(`Server started on port ${port}\n`));
 
 // Receive JSON scheduling request info from frontend
 // Send back JSON scheduling response to frontend
-// Utilizes a chain of functions that call each other
+// Call scheduleEvent to begin a chain of functions that call each other
 app.post('/schedule_event', asyncHandler(async (req, res) => {
     console.log('req.body: ' + JSON.stringify(req.body, null, 2) + '\n');
 
@@ -68,18 +35,52 @@ app.post('/schedule_event', asyncHandler(async (req, res) => {
     });
 }));
 
-/* Loops through list of attendees and calls functions to populate all_busy
+/**
+ * Create an OAuth2 client with the given credentials, and then execute the
+ * given callback function.
+ *
+ * @param {Object} credentials: The authorization client credentials.
+ * @param {string} tokens: user tokens (refresh & auth) to access calendar
+ * @param {function} callback: The callback to call with the authorized client.
+ * @param {Object} request_data: request data from frontend to use info from
+ * @param {List} all_busy: ongoing list of everyone's busy times to build and refer to
+ */
+// Tried and failed to return oAuth2Client to calling function to send directly to subsequent functions
+async function authorize(credentials, tokens, callback, request_data, all_busy) {
+    console.log('authorize begin\n');
+    const {client_secret, client_id, redirect_uris} = credentials.installed;
+    const oAuth2Client = new google.auth.OAuth2(
+        client_id, client_secret, redirect_uris[0]);
+
+    return new Promise( (resolve, reject) => {
+        oAuth2Client.setCredentials({refresh_token: tokens.refresh_token, access_token: tokens.access_token});
+        callback(oAuth2Client, request_data, all_busy)
+            .then(response => {
+                resolve(response);
+            })
+            .catch(err => {
+                reject(err);
+            })
+    })
+}
+
+/**
+ * Calls function to generate full list of users' busy times
  * Then calls functions to find time and schedule if possible
- * returns event info from scheduled event (or failure)
- * Calls getOwnCal which returns a JSON of the user's own events
+ * Returns event info from scheduled event (or failure)
+ *
+ * @param {Object} request_data: request data from frontend
+ * @param {Object} credentials: The authorization client credentials.
  */
 // TODO: remove this if unnecessary OR utilize it to manage multiple users' calendars
 async function scheduleEvent(request_data, credentials) {
     return new Promise( (resolve, reject) => {
 
+        // Call function to build list of all busy times
         getAllBusy(credentials, request_data)
             .then(all_busy => {
                 // Makes the call to find a good time gap and book the actual event
+                // If there is only one element in the list of busy times, there are no free times available
                 if (all_busy.length > 1) {
                     console.log('Calling findWindow\n');
 
@@ -89,7 +90,7 @@ async function scheduleEvent(request_data, credentials) {
                             resolve(event);
                         })
                         .catch(err => {
-                            reject('Failed to find event window: ' + err);
+                            reject('Failed to find event window or create event: ' + err);
                         })
                 }
                 else {
@@ -101,7 +102,13 @@ async function scheduleEvent(request_data, credentials) {
     })
 }
 
-// Generate a list of everyone's busy times
+/**
+ * Generate a list of everyone's busy times
+ * Loops through each attendee's calendar to populate list
+ *
+ * @param {Object} credentials: gapi credentials to pass into the authorize function
+ * @param {Object} request_data: request data from frontend including list of attendees and tokens for each
+ */
 async function getAllBusy(credentials, request_data) {
     return new Promise( (resolve, reject) => {
         var all_busy = [];
@@ -109,10 +116,12 @@ async function getAllBusy(credentials, request_data) {
         console.log('complete workingHours all_busy in getAll: ' + JSON.stringify(all_busy) + '\n');
 
         var i = 0;
+
         // Note: this can't be done in a for loop because of the return new Promise above
         // GOD BLESS THIS PERSON: https://stackoverflow.com/a/21185103
         (function next(i) {
-            console.log('in function next; i = ' + i + '\n');
+            //console.log('in function next; i = ' + i + '\n');
+            // All attendees' calendars parsed except for scheduler; add their calendar data, then return the full list
             if (i === request_data.event_info.attendees.length) {
                 authorize(credentials, request_data.schedule_info.organizer.tokens, getOwnCal, request_data, all_busy)
                     .then(new_all_busy => {
@@ -125,8 +134,9 @@ async function getAllBusy(credentials, request_data) {
                     })
             }
 
+            // Build all_busy list using each attendees' calendars
             else {
-                console.log('request_data.event_info.attendees[i].tokens: ' + JSON.stringify(request_data.event_info.attendees[i].tokens, null, 2));
+                //console.log('request_data.event_info.attendees[i].tokens: ' + JSON.stringify(request_data.event_info.attendees[i].tokens, null, 2));
 
                 authorize(credentials, request_data.event_info.attendees[i].tokens, getOwnCal, request_data, all_busy)
                     .then(new_all_busy => {
@@ -142,15 +152,14 @@ async function getAllBusy(credentials, request_data) {
     });
 }
 
-/* Adapted from Google Calendar API's Node.js Quickstart
- * @param {google.auth.OAuth2} auth An authorized OAuth2 client.
- *
+/** 
  * Creates list of calendars owned by user to refer to for scheduling
- * Passes list along with other params to next function
+ * Passes list along with other params to next function where the list is merged into full all_busy list
+ *
+ * @param {google.auth.OAuth2} auth: An authorized OAuth2 client.
+ * @param {Object} request_data: request data from frontend to pass into next function to retrieve own busy times
+ * @param {List} all_busy: ongoing list of all attendees' busy times
  */
-// Goes through all of user's calendars and creates a list of the calendars owned by the user
-// (expectation is that these will be events that they must actually attend)
-// Receives request_data to pass on to next function called
 async function getOwnCal(auth, request_data, all_busy) {
     //console.log('getOwnCal request_data: ' + JSON.stringify(request_data, null, 2) + '\n');
     const calendar = google.calendar({version: 'v3', auth});
@@ -194,9 +203,14 @@ async function getOwnCal(auth, request_data, all_busy) {
 
 }
 
-
-// Creates list of owned events using start/end time in request_data
-// Calls createEvent to schedule the event
+/**
+ * Creates list busy times from user's owned calendars
+ * Only looks between start/end time in request_data 
+ *
+ * @param {google.auth.OAuth2} auth: An authorized OAuth2 client.
+ * @param {Object} request_data: request data from frontend to pass into next function to retrieve own busy times
+ * @param {List} all_busy: ongoing list of all attendees' busy times
+ */
 async function getOwnBusy(auth, own_cal_ids, request_data, all_busy) {
     const calendar = google.calendar({version: 'v3', auth});
 
@@ -258,13 +272,21 @@ async function getOwnBusy(auth, own_cal_ids, request_data, all_busy) {
             });
     });
 }
+/**
+ * Find a window of time from the list of all users' busy times
+ * Check if there is a window available at start of time window (request_data.start_time)
+ * If not, check each time window between entries of the busy list because they are guaranteed to be long enough
+ * Do not schedule events that end outside of working hours
+ *
+ * Saturday and Sunday are currently hardcoded as non-working days
+ * 9-5 currently hardcoded as working hours
+ *
+ * @param {google.auth.OAuth2} auth: An authorized OAuth2 client.
+ * @param {Object} request_data: request data from frontend to pass into next function to retrieve own busy times
+ * @param {List} all_busy: ongoing list of all attendees' busy times
+ */
 async function findWindow(auth, request_data, all_busy) {
     return new Promise(function(resolve, reject) {
-        // Start at beginning of request_data.start_time request.data.work_time
-        // Don't look for times outside of working hours (and in the future outside of working days)
-
-        // Hard-coding saturday and sunday as non-working days
-        // Hard-coding 9-5 as working hours
 
         var search_start = parseDate(request_data.schedule_info.start_date);
         var duration = request_data.schedule_info.duration;
@@ -274,17 +296,18 @@ async function findWindow(auth, request_data, all_busy) {
 
         while (i < all_busy.length) {
 
+            /*
             console.log('Loop #' + i + ':\n\tsearch_start: ' + search_start + '\n');
             console.log('\tsearch_start.getDay(): ' + search_start.getDay() + '\n');
             console.log('\tsearch_start.getHours(): ' + search_start.getHours() + '\n');
-
+            */
 
             if (gapOkay(search_start, parseDate(all_busy[i].start), duration)) {
                 
                 var end_time = new Date();
                 end_time.setTime(search_start.getTime() + toMSec(duration));
 
-                console.log('end_time.getHours(): ' + end_time.getHours() + '\n');
+                //console.log('end_time.getHours(): ' + end_time.getHours() + '\n');
                 
                 // Check if end_timeis outside of working hours
                 if (end_time.getHours() < 9 || end_time.getHours() > 17 || end_time.getTime() > parseDate(request_data.schedule_info.end_date).getTime()) {
@@ -293,16 +316,12 @@ async function findWindow(auth, request_data, all_busy) {
                     continue;
                 }
 
-
                 // Valid event window found; break to call createEvent
                 request_data.event_start = ISODateString(search_start);
-                console.log('request_data.event_start: ' + request_data.event_start);
-
+                //console.log('request_data.event_start: ' + request_data.event_start);
                 //console.log('end_time + ms = ' + end_time + '; typeof: ' + typeof end_time);
-
                 request_data.event_end = ISODateString(end_time);
-                console.log('request_data.event_end: ' + request_data.event_end + '\n');
-
+                //console.log('request_data.event_end: ' + request_data.event_end + '\n');
 
                 time_found = true;
                 break;
@@ -332,8 +351,12 @@ async function findWindow(auth, request_data, all_busy) {
     console.log('Ending findWindow...\n');
 }
 
-/* Converts a Date() object to RFC 3339 format
- * https://stackoverflow.com/a/7244288 */
+/**
+ * Converts a Date() object to RFC 3339 format
+ *
+ * @param {Object} d: Date() format date
+ * https://stackoverflow.com/a/7244288 
+ */
 function ISODateString(d){
      function pad(n){return n<10 ? '0'+n : n}
      return d.getUTCFullYear()+'-'
@@ -344,6 +367,13 @@ function ISODateString(d){
           + pad(d.getUTCSeconds())+'Z'
 }
 
+/**
+ * Creates the event within the scheduler's calendar
+ * Returns the JSON response from Google Calendar API
+ *
+ * @param {google.auth.OAuth2} auth: An authorized OAuth2 client.
+ * @param {Object} request_data: data from frontend to specify event details
+ */
 async function createEvent(auth, request_data) {
     console.log('Creating event using Calendar API...\n');
 
@@ -405,7 +435,12 @@ async function createEvent(auth, request_data) {
     });
 }
 
-// Convert RFC 3339 format string into Date object in UTC
+/** 
+ * Convert RFC 3339 format string into Date object in UTC
+ * Google only accepts RFC 3339 format
+ *
+ * @param {String} rfc_in: date string to convert
+ */
 function parseDate(rfc_in) {
     // Example rfc_in: 2020-02-22T01:00:00Z
     //console.log('rfc_in: ' + rfc_in);
@@ -439,7 +474,11 @@ function parseDate(rfc_in) {
     return date;
 }
 
-// Given a length of time in 00h:00m format, return length in milliseconds
+/** 
+ * Given a length of time in hh:mm format, return length in milliseconds
+ *
+ * @param {String} duration: string with valid hh:mm format
+ */
 function toMSec(duration) {
     var split_dur = duration.split(':');
     var hour = parseInt(split_dur[0]);
@@ -451,8 +490,14 @@ function toMSec(duration) {
     return millisec;
 }
 
-// Populates an array to block out non-working hours
-// TODO: adjust this to handle time zones (only using user's browser's time zone for now)
+/** 
+ * Populates an array to block out non-working hours
+ * 
+ * @param {Object} request_data: request info from frontend to generate working times between the search window
+ *
+ * TODO: adjust this to handle time zones (only using user's browser's time zone for now)
+ * TODO: adjust to handle specified working times from user request
+ */
 function workingHours(request_data) {
     //console.log('Start of workingHours\n');
 
@@ -484,7 +529,7 @@ function workingHours(request_data) {
         // Starting at the start_time date, create blocks of busy time for non-working hours
         // Create blocks of busy times using non-working days
         // TODO: adjust this to use user's specifications
-        //
+        
         // If within Friday after 9am - Sunday, create new busy block until Monday @ 9am or end of search window (whichever is first)
         //console.log('getDay() = ' + search_start.getDay() + '; getHours() = ' + search_start.getHours());
 
@@ -509,7 +554,6 @@ function workingHours(request_data) {
                 nonwork_start.setMilliseconds(0);
             }
             //console.log('nonwork_start: ' + nonwork_start.toLocaleString('en-US', {timeZone: 'America/Los_Angeles'}) + '\n');
-
 
             // Set the end to the next Monday (https://stackoverflow.com/a/33078673)
             nonwork_end.setDate(search_start.getDate() + ((1 + 7 - search_start.getDay()) % 7));
@@ -551,9 +595,6 @@ function workingHours(request_data) {
             else {
                 break;
             }
-
-
-
         }
 
         //console.log('Checking if next working day is before end of search window\n');
@@ -591,9 +632,14 @@ function workingHours(request_data) {
     return working_hours;
 }
 
-// Given an end time, start time, and a duration return true if gap is >= duration
-// Convert times to unix timestamp and get their difference (given in s)
-// Convert duration to s and compare; if duration >= difference, return true
+/**
+ * Given an end time, start time, and a duration return true if gap is >= duration
+ * Convert duration to s and compare; if duration >= difference, return true
+ *
+ * @param {Date() Object} end_first: the end time of the previous busy window
+ * @param {Date() Object} start_next: the start time of the previous busy window
+ * @param {String} duration: the user-specified event duration in hh:mm format
+ */
 function gapOkay(end_first, start_next, duration) {
     var dur_time = toMSec(duration);
 
@@ -607,8 +653,15 @@ function gapOkay(end_first, start_next, duration) {
     }
 }
 
-/* Merges user's busy times into all_busy
+/**
+ * Merges user's busy times into all_busy
  * Accepts the duration of the goal event so that any too-short gaps between existing events that does not get saved as a valid block
+ * Also used to merge each calendar's busy times into a list of all busy times for each user so that it is preprocessed to remove too-short gaps
+ * (That list is then merged into the master list of all busy times)
+ *
+ * @param {List} all_busy: the ongoing list of all busy windows
+ * @param {Object} user_busy: the busy times of an individual user OR busy times of an individual calendar
+ * @param {String} duration: user-specified event duration in hh:mm format
  */
 function merge_busy(all_busy, user_busy, duration) {
     var new_busy = [], i = 0, j = 0;
@@ -767,9 +820,10 @@ function merge_busy(all_busy, user_busy, duration) {
     return new_busy;
 }
 
-/* No longer creating ottoPlan calendar
+/** No longer creating ottoPlan calendar
  * Use of this would require changing scope from 'https://www.googleapis.com/auth/calendar.events' to 'https://www.googleapis.com/auth/calendar.events'
-// Creates a new ottoPlan calendar
+ *
+ * Creates a new ottoPlan calendar
 async function createCal(auth) {
   const calendar = google.calendar({version: 'v3', auth});
 
