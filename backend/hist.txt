@@ -1,0 +1,52 @@
+ 2005  vim credentials.json
+ 2006  npm install googleapis@39 --save
+ 2007  vim index.js
+ 2008  node .
+ 2009  fg
+ 2010  vim index.js 
+ 2011  node .
+ 2012  ls
+ 2013  vim token.json 
+ 2014  fg
+ 2015  node oauth2.js 
+ 2016  fg
+ 2017  sudo npm install -g open
+ 2018  node oauth2.js 
+ 2019  sudo npm install open
+ 2020  ls
+ 2021  node oauth2.js 
+ 2022  cd ~
+ 2023  sudo npm install open
+ 2024  ls
+ 2025  vim package.json
+ 2026  npm install
+ 2027  npm fund
+ 2028  npm install
+ 2029  npm clean cache
+ 2030  sudo npm install -g npm
+ 2031  cd ottoPlan/backend/
+ 2032  ls
+ 2033  npm init
+ 2034  sudo npm install open
+ 2035  node oauth2.js 
+ 2036  npm install server-destroy
+ 2037  node oauth2.js 
+ 2038  fg
+ 2039  node .
+ 2040  node index.js 
+ 2041  fg
+ 2042  ls
+ 2043  rm package.json 
+ 2044  rm oauth2.js 
+ 2045  ls
+ 2046  ls token.json 
+ 2047  cat token.json 
+ 2048  fg
+ 2049  node index.js 
+ 2050  fg
+ 2051  node index.js 
+ 2052  fg
+ 2053  git status
+ 2054  git status > out.txt
+ 2055  fg
+ 2056  history > hist.txt

@@ -1,0 +1,27 @@
+{
+    "event_info": {
+        "summary": "Test Event from JSON",
+        "location": "ur mom",
+        "description": "This is a test event, importing from local JSON file.",
+        "attendees": [
+            { "email": "cmori007@ucr.edu"},
+            { "email": "dsiv001@ucr.edu"}
+        ]
+    },
+    "scheduling_info": {
+      "start": {
+          "dateTime": "2020-02-19T20:00:00-05:00",
+          "timeZone": "America/Los_Angeles"
+      },
+      "end": {
+          "dateTime": "2020-02-19T20:00:00-09:00",
+          "timeZone": "America/Los_Angeles"
+      },
+        "event_duration": "",
+        "time_zone": "",
+        "start_date": "",
+        "end_date": "",
+        "start_time": "",
+        "end_time": ""
+    }
+}

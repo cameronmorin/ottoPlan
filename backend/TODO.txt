@@ -1,0 +1,4 @@
+- Get the async functions working together
+- Figure out how to use the time format
+- Parse owned calendars to find available time slots
+- Figure out how to access multiple owned calendars to find available time slots
