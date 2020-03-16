@@ -29,7 +29,7 @@ import EventForm from './EventForm'
 var unread = false;
 const items = [
   { name: 'home', label: 'Home', Icon: HomeIcon},
-  { name: 'friends', label: 'Friends', Icon: FriendIcon},
+  { name: 'contacts', label: 'Contacts', Icon: FriendIcon},
   { name: 'create event', label: 'Create Event', Icon: EventIcon},
   { name: 'notifications', label: 'Notifications', Icon: unread ? UnreadIcon : NotifIcon},
   { 
