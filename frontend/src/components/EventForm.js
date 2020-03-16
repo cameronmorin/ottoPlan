@@ -248,7 +248,7 @@ export default class EventForm extends React.Component {
                         alert('Event created');
                     }
                     else {
-                        alert('Error creating event: ' + result.statusText);
+                        alert('Event not created - ' + result.statusText);
                     }
                     //alert('Link: (THIS STILL DOESN\'T WORK)', JSON.stringify(result.data.htmLink, null, 2));
                 })

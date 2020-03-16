@@ -47,7 +47,7 @@ app.post('/schedule_event', asyncHandler(async (req, res) => {
  */
 // Tried and failed to return oAuth2Client to calling function to send directly to subsequent functions
 async function authorize(credentials, tokens, callback, request_data, all_busy) {
-    console.log('authorize begin\n');
+    console.log('Authorizing...\n');
     const {client_secret, client_id, redirect_uris} = credentials.installed;
     const oAuth2Client = new google.auth.OAuth2(
         client_id, client_secret, redirect_uris[0]);
@@ -81,21 +81,16 @@ async function scheduleEvent(request_data, credentials) {
             .then(all_busy => {
                 // Makes the call to find a good time gap and book the actual event
                 // If there is only one element in the list of busy times, there are no free times available
-                if (all_busy.length > 1) {
-                    console.log('Calling findWindow\n');
+                //console.log('Calling findWindow\n');
 
-                    authorize(credentials, request_data.schedule_info.organizer.tokens, findWindow, request_data, all_busy)
-                        .then(event => {
-                            console.log('Scheduled event: ' + JSON.stringify(event));//, null, 2));
-                            resolve(event);
-                        })
-                        .catch(err => {
-                            reject('Failed to find event window or create event: ' + err);
-                        })
-                }
-                else {
-                    reject('No available times found.');
-                }
+                authorize(credentials, request_data.schedule_info.organizer.tokens, findWindow, request_data, all_busy)
+                    .then(event => {
+                        console.log('Scheduled event: ' + JSON.stringify(event));//, null, 2));
+                        resolve(event);
+                    })
+                    .catch(err => {
+                        reject('Failed to find event window or create event: ' + err);
+                    })
             }).catch(err => {
                 reject(err);
             })
@@ -113,7 +108,7 @@ async function getAllBusy(credentials, request_data) {
     return new Promise( (resolve, reject) => {
         var all_busy = [];
         all_busy = workingHours(request_data);
-        console.log('complete workingHours all_busy in getAll: ' + JSON.stringify(all_busy) + '\n');
+        //console.log('complete workingHours all_busy in getAll: ' + JSON.stringify(all_busy) + '\n');
 
         var i = 0;
 
@@ -126,7 +121,7 @@ async function getAllBusy(credentials, request_data) {
                 authorize(credentials, request_data.schedule_info.organizer.tokens, getOwnCal, request_data, all_busy)
                     .then(new_all_busy => {
                         all_busy = JSON.parse(JSON.stringify(new_all_busy));
-                        console.log('FULL all_busy: ' + JSON.stringify(all_busy, null, 2) + '\n');
+                        console.log('Busy times of all attendees: ' + JSON.stringify(all_busy, null, 2) + '\n');
                         resolve(all_busy);
                     })
                     .catch(err => {
@@ -194,7 +189,7 @@ async function getOwnCal(auth, request_data, all_busy) {
                         resolve(event_info);
                     })
                     .catch(err => {
-                        reject('getOwnBusy failed: ' + err);
+                        reject('Failed during fetching attendee\'s busy times: ' + err);
                     })
             }).catch(err => {
                 console.log(err.message, '\n');
@@ -259,7 +254,7 @@ async function getOwnBusy(auth, own_cal_ids, request_data, all_busy) {
                     }
                     //console.log('user_busy after[' + curr_id + ' = ' + i + ']: ' + JSON.stringify(user_busy, null, 2) + '\n');
                 }
-                console.log('COMPLETE user_busy: ' + JSON.stringify(user_busy, null, 2) + '\n');
+                //console.log('Complete busy times of current attendee: ' + JSON.stringify(user_busy, null, 2) + '\n');
 
                 // Merge user busy_times with all_busy and return the new all_busy
                 all_busy = merge_busy(all_busy, user_busy, duration);
@@ -292,7 +287,7 @@ async function findWindow(auth, request_data, all_busy) {
         var duration = request_data.schedule_info.duration;
         var i = 0;
         var time_found = false;
-        console.log('in findWindow\n');
+        console.log('Searching for window to schedule event\n');
 
         while (i < all_busy.length) {
 
@@ -311,7 +306,7 @@ async function findWindow(auth, request_data, all_busy) {
                 
                 // Check if end_timeis outside of working hours
                 if (end_time.getHours() < 9 || end_time.getHours() > 17 || end_time.getTime() > parseDate(request_data.schedule_info.end_date).getTime()) {
-                    console.log('Ends outside of working hours or search window: ' + end_time.getHours() + '\n');
+                    //console.log('Ends outside of working hours or search window: ' + end_time.getHours() + '\n');
                     search_start = parseDate(all_busy[i++].end);
                     continue;
                 }
@@ -334,21 +329,20 @@ async function findWindow(auth, request_data, all_busy) {
         }
 
         if (time_found) {
-            console.log('findWindow calling createEvent\n');
+            console.log('Window found\n');
             createEvent(auth, request_data)
                 .then(function(event) {
                     //console.log('getOwnBusy event: ' + JSON.stringify(event, null, 2));
                     resolve(event);
                 })
                 .catch(err => {
-                    reject('findWindow failure: ' + err);
+                    reject(err);
                 })
         }
         else {
             reject('No available time found');
         }
     });
-    console.log('Ending findWindow...\n');
 }
 
 /**
@@ -413,7 +407,6 @@ async function createEvent(auth, request_data) {
     // Return a promise in order to wait before sending back
     // This is the magic that made my hair turn grey
     // shoutout to this man who saved my life: https://stackoverflow.com/a/44735241
-    console.log('Using temporary ottoPlan calendar for testing\n');
     return new Promise(function(resolve, reject) {
         calendar.events.insert(
             {
@@ -513,7 +506,6 @@ function workingHours(request_data) {
     end_date.setMilliseconds(0);
 
     // If the end_date is not blocked out, create a block for it at the end
-    var end_blocked = false;
     var i = 0;
     while (new Date(search_start).getTime() < new Date(end_date).getTime()) {
         //console.log('-------------------\nwhile loop #' + i + '\n');
@@ -533,7 +525,8 @@ function workingHours(request_data) {
         // If within Friday after 9am - Sunday, create new busy block until Monday @ 9am or end of search window (whichever is first)
         //console.log('getDay() = ' + search_start.getDay() + '; getHours() = ' + search_start.getHours());
 
-        if (search_start >= parseDate(request_data.schedule_info.end_date)) {
+        // If the next window to analyze is after the end of the search window, set it to the end
+        if (search_start >= end_date) {
             //console.log('start >= end_date\n');
             search_start.setTime(parseDate(request_data.schedule_info.end_date));
             search_start.setMilliseconds(0);
@@ -542,31 +535,57 @@ function workingHours(request_data) {
             break;
         }
 
+        // Weekend outside of working hours
         else if (search_start.getDay() == 0 || search_start.getDay() == 6 || (search_start.getDay() == 5 && search_start.getHours() >= 9)) {
             //console.log('Weekend: ' + search_start.getDay() + '\n');
 
-            // If the start of the search window is on a Friday within working hours, set the start of the block to be end of day Friday
-            if (search_start.getDay() == 5 && search_start.getHours() < 17) {
-
+            // If the start of the search window is after working hours on a Friday, set the start of the block to be end of day Friday
+            if (search_start.getDay() == 5) {
                 nonwork_start.setHours(17);
                 nonwork_start.setMinutes(0);
                 nonwork_start.setSeconds(0);
                 nonwork_start.setMilliseconds(0);
+
+                // If the end of the search window is before EOD friday, just set it as the end time, push, and stop populating busy times
+                if (end_date.getTime() < search_start.getTime()) {
+                    nonwork_start.setTime(end_date.getTime());
+                    nonwork_end.setTime(end_date.getTime());
+                    var block_day = {
+                        start: ISODateString(nonwork_start),
+                        end: ISODateString(nonwork_end)
+                    }
+                    working_hours.push(block_day);
+                    break;
+                }
             }
             //console.log('nonwork_start: ' + nonwork_start.toLocaleString('en-US', {timeZone: 'America/Los_Angeles'}) + '\n');
 
-            // Set the end to the next Monday (https://stackoverflow.com/a/33078673)
+            // Set the end to the next Monday at 9am (https://stackoverflow.com/a/33078673)
             nonwork_end.setDate(search_start.getDate() + ((1 + 7 - search_start.getDay()) % 7));
             nonwork_end.setHours(9);
+            nonwork_end.setMinutes(0);
+            nonwork_end.setSeconds(0);
+            nonwork_end.setMilliseconds(0);
             //console.log('nonwork_end: ' + nonwork_end.toLocaleString('en-US', {timeZone: 'America/Los_Angeles'}) + '\n');
 
+            // If the search window ends before the next Monday, just set the end of busy time to that
+            if (end_date.getTime() < nonwork_end.getTime()) {
+                nonwork_end.setTime(end_date.getTime());
+                var block_day = {
+                    start: ISODateString(search_start),
+                    end: ISODateString(nonwork_end)
+                }
+                working_hours.push(block_day);
+                break;
+            }
         }
         // Block out non-working hours of working days (Mon - Thurs)
         else {
             //console.log('Weekday: ' + search_start.getDay() + '\n');
             //console.log('search_start.getDate(): ' + search_start.getDate() + ';end_date.getDate(): ' + end_date.getDate() + '\n');
             //console.log('search_start.getHours(): ' + search_start.getHours() + ';end_date.getHours(): ' + end_date.getHours() + '\n');
-            // If the start of the search window is outside of working hours, create a new block until 9am
+            
+            // If the start of the search window is before working hours, create a new block until 9am
             // Don't need to adjust the start of the search window
             if (search_start.getHours() < 9) {
                 //console.log('search_start.getHours() < 9\n');
@@ -575,10 +594,31 @@ function workingHours(request_data) {
                 nonwork_end.setSeconds(0);
                 nonwork_end.setMilliseconds(0);
             }
-            // Don't create an end-of-day busy window after search window
-            // TODO: this doesn't handle weekends that start at end of month and go to new month
-            else if (search_start.getDate() < end_date.getDate() || end_date.getHours() < 17) {
-                //console.log('search_start.getHours() >= 9\n');
+            // If search_start is same day as end_date, create busy window at end of window or 5pm-end of window, whichever is later
+            else if (search_start.getDate() == end_date.getDate() && search_start.getMonth() == end_date.getMonth() && search_start.getYear() == end_date.getYear()) {
+                nonwork_start.setHours(17);
+                nonwork_start.setMinutes(0);
+                nonwork_start.setSeconds(0);
+                nonwork_start.setMilliseconds(0);
+                
+                // Set end of work time to end_date or 5pm, whichever is earlier
+                if (nonwork_start.getTime() > end_date.getTime()) {
+                    nonwork_start.setTime(end_date.getTime());
+                    nonwork_end.setTime(end_date.getTime());
+                }
+                nonwork_end.setTime(end_date.getTime());
+
+                var block_day = {
+                    start: ISODateString(nonwork_start),
+                    end: ISODateString(nonwork_end)
+                }
+                working_hours.push(block_day);
+                break;
+
+            }
+            // If end of search window is on a day after the current one, create the busy window until start of next working day
+            else {
+                //console.log('search_start.getHours() >= 9 on a day before end_date\n');
                 // Set start of window to be 5pm of current day
                 nonwork_start.setHours(17);
                 nonwork_start.setMinutes(0);
@@ -592,21 +632,17 @@ function workingHours(request_data) {
                 nonwork_end.setSeconds(0);
                 nonwork_end.setMilliseconds(0);
             }
-            else {
-                break;
-            }
         }
 
         //console.log('Checking if next working day is before end of search window\n');
 
         // If the next working day is after the end of the search window, just set it to the end of the search window
-        if (nonwork_end > parseDate(request_data.schedule_info.end_date)) {
+        if (nonwork_end > end_date) {
             nonwork_end.setTime(end_date.getTime());
             nonwork_end.setMilliseconds(0);
-            end_blocked = true;
         }
-        //console.log('nonwork_start: ' + nonwork_start + '\n');
-        //console.log('nonwork_end: ' + nonwork_end + '\n');
+        //console.log('nonwork_start to be pushed: ' + nonwork_start + '\n');
+        //console.log('nonwork_end to be pushed: ' + nonwork_end + '\n');
 
         var block_day = {
             start: ISODateString(nonwork_start),
@@ -620,15 +656,7 @@ function workingHours(request_data) {
         search_start.setMilliseconds(0);
     }
 
-    if (!end_blocked) {
-        var block_day = {
-            start: request_data.schedule_info.end_date,
-            end: request_data.schedule_info.end_date
-        }
-        working_hours.push(block_day);
-    }
-
-    console.log('working_hours: ' + JSON.stringify(working_hours, null, 2) + '\n');
+    //console.log('working_hours: ' + JSON.stringify(working_hours, null, 2) + '\n');
     return working_hours;
 }
 
