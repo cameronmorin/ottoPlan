@@ -241,12 +241,9 @@ export default class EventForm extends React.Component {
             <TextInput name="summary" initVal = {this.state.formControls.summary.initVal} value={this.state.formControls.summary.value} onChange={this.changeHandler} valid={this.state.formControls.summary.valid} formValid={this.state.formValid}/>
             <TextInput name="location" initVal = {this.state.formControls.location.initVal} value={this.state.formControls.location.value} onChange={this.changeHandler} valid={this.state.formControls.location.valid} formValid={this.state.formValid}/>
             <TextInput name="description" initVal = {this.state.formControls.description.initVal} value={this.state.formControls.description.value} onChange={this.changeHandler} valid={this.state.formControls.description.valid} formValid={this.state.formValid}/>
-            {/* <TextInput name="attendees" initVal = {this.state.formControls.attendees.initVal} value={this.state.formControls.attendees.value} onChange={this.changeHandler} valid={this.state.formControls.attendees.valid} formValid={this.state.formValid}/> */}
             <h4>Attendees</h4>
             <Attendees contacts={this.props.contacts} checkBox={this.checkAttendee}/>
-            {/*schedule_info
-                 TODO: fix format (grid?), add validation for dates*/}
-            <SelectOption name="timezone" onChange={this.changeHandler} valid={this.state.formControls.timezone.valid} formValid={this.state.formValid} options={this.state.formControls.timezone.options} default={this.state.formControls.timezone.default}/>
+            {/* <SelectOption name="timezone" onChange={this.changeHandler} valid={this.state.formControls.timezone.valid} formValid={this.state.formValid} options={this.state.formControls.timezone.options} default={this.state.formControls.timezone.default}/> */}
             <label>Start date</label>
             <DatePicker 
             className="calendar"
