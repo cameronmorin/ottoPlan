@@ -14,7 +14,6 @@ const SelectOption = props => {
 
     return (
         <div className="form-group">
-            {/* TODO: get rid of underscore */}
             <label>{label}</label> 
             {showError ? <label  style={{ color: 'red', fontSize: '10px'}}>&nbsp;&nbsp;&nbsp;*Required</label> : null}
             <select className={formControl} value={props.value} onChange={props.onChange} name={props.name}>

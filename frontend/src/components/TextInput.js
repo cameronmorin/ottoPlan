@@ -10,16 +10,15 @@ const TextInput = props => {
         formControl = 'form-control control-error';
         showError = true;
     }
-    
 
-    const label = (props.name.charAt(0).toUpperCase() + props.name.substring(1)).replace('_', ' ');
+    let label = (props.name.charAt(0).toUpperCase() + props.name.substring(1)).replace('_', ' ');
 
     return (
         <div classname="form-group">
             <label>{label}</label>
             {showError ? <label  style={{ color: 'red', fontSize: '10px'}}>&nbsp;&nbsp;&nbsp;*Required</label> : null}
-            {/* <input type="text" className={formControl} {...props}/> */}
-            <textarea className={formControl} {...props}/> 
+            <input type="text" className={formControl} {...props}/>
+            {/* <textarea className={formControl} {...props}/>  */}
         </div>
     );
 }

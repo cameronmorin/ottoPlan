@@ -12,20 +12,13 @@ import "react-datepicker/dist/react-datepicker.css";
 
 import { Modal, Button } from 'react-bootstrap'
 
-//TODO: find better way to init min/max
-const min = new Date();
-min.setHours(9);
-min.setMinutes(0);
-const max = new Date();
-max.setHours(17);
-max.setMinutes(0);
-
 export default class EventForm extends React.Component {
     constructor(props) {
         super(props);
         this.state={
             formValid: true,
             showError: false,
+            showTimeError: false,
             checkList: [],
             attendees: [],
 
@@ -56,21 +49,9 @@ export default class EventForm extends React.Component {
                     valid: false,
                     touched: false,
                     validationRules: {
-                        //isRequired: true
                         validTime: true,
                     },
-                    // options: [
-                    //   {value: '15', label: '15 minutes'},
-                    //   {value: '30', label: '30 minutes'},
-                    //   {value: '45', label: '45 minutes'},
-                    //   {value: '60', label: '1 hour'},
-                    //   {value: '75', label: '1 hour 15 minutes '},
-                    //   {value: '90', label: '1 hour 30 minutes'},
-                    //   {value: '105', label: '1 hour 45 minutes'},
-                    //   {value: '120', label: '2 hours'},
-                    // ],
                     from: 'schedule',
-                    //duration: { hr: '', min: ''},
                 },
                 timezone: {
                     value: '',
@@ -177,6 +158,10 @@ export default class EventForm extends React.Component {
 
             if(this.state.formControls[x].valid === false) {
                 formValid=false;
+
+                //sets feedback modal's message based off of which feed is invalid
+                if (this.state.formControls[x].validationRules.validTime) this.setState({ showTimeError: true});
+                else this.setState({ showTimeError: false});
                 break;
             }
         }
@@ -197,8 +182,7 @@ export default class EventForm extends React.Component {
 
 
         if(formValid === false) {
-            this.setState({formValid: formValid});
-            this.setState({ showError: true });
+            this.setState({formValid: formValid, showError: true});
         }
         else {  //populate JSON for backend
             // Get email/refresh tokens for all attendees and put into list
@@ -211,17 +195,6 @@ export default class EventForm extends React.Component {
                 }
             }
             
-            // set up duration with appropriate format
-            
-            // let hour = -1;
-            // let val = this.state.formControls["event_duration"].value
-            // while (val > 0) {
-            //   val -= 59   ;
-            //   hour += 1;
-            // }
-            
-            // let hourStr = "0" + hour;
-            // data.schedule_info["duration"] = hourStr + ":" + (this.state.formControls["event_duration"].value % 60).toString();
             data.schedule_info["duration"] = this.state.formControls["event_duration"].value.toString();
             data.schedule_info["start_date"] = this.state.startDate;
             data.schedule_info["end_date"] = this.state.endDate;
@@ -244,7 +217,7 @@ export default class EventForm extends React.Component {
                 .then(result => {
                     console.log('Response JSON: ', JSON.stringify(result));
                     // I can't figure out how to print the json stuff to the alert window
-                    if (result.status == 200) {
+                    if (result.status === 200) {
                         alert('Event created');
                     }
                     else {
@@ -274,40 +247,31 @@ export default class EventForm extends React.Component {
             {/*schedule_info
                  TODO: fix format (grid?), add validation for dates*/}
             <SelectOption name="timezone" onChange={this.changeHandler} valid={this.state.formControls.timezone.valid} formValid={this.state.formValid} options={this.state.formControls.timezone.options} default={this.state.formControls.timezone.default}/>
-            <label>Start Date</label>
+            <label>Start date</label>
             <DatePicker 
+            className="calendar"
             selected={this.state.startDate} 
             onChange={this.changeStartHandler}
             inline
             showMonthDropdown
             showYearDropdown
             showTimeInput
-            // minTime={min}
-            // maxTime={max}
-            // timeFormat="hh:mm aa"
-            // timeIntervals={15}
-            timeCaption="Time"
-            //dateFormat="MMMM d, yyyy h:mm aa"    
+            timeCaption="Time:" 
             placeholderText="Select a starting date/time"
             />
-            <label>End Date</label>
+            <label>End date</label>
             <DatePicker 
+            className="calendar"
             selected={this.state.endDate} 
             onChange={this.changeEndHandler}
             inline
             showMonthDropdown
             showYearDropdown
             showTimeInput
-            // minTime={min}
-            // maxTime={max}
-            // timeIntervals={15}
-            timeCaption="Time"
-            // timeFormat="hh:mm aa"
-            // dateFormat="MMMM d, yyyy h:mm aa"    
+            timeCaption="Time Governor"  
             placeholderText="Select an ending date/time"
             />
-            <TextInput name="event_duration" onChange={this.changeHandler} label={this.state.formControls.event_duration.label} valid={this.state.formControls.event_duration.valid} formValid={this.state.formValid} options={this.state.formControls.event_duration.options} />
-            {/* <SelectOption name="event_duration" hr={this.state.formControls.event_duration.duration.hr} min={this.state.formControls.event_duration.duration.min} onChange={this.changeHandler} label={this.state.formControls.event_duration.label} valid={this.state.formControls.event_duration.valid} formValid={this.state.formValid} options={this.state.formControls.event_duration.options} default={this.state.formControls.event_duration.default}/> */}
+            <TextInput name="event_duration" onChange={this.changeHandler} label={this.state.formControls.event_duration.label} valid={this.state.formControls.event_duration.valid} formValid={this.state.formValid} options={this.state.formControls.event_duration.options} placeholder={"(HH:MM)"} onFocus={(e) => e.target.placeholder = ""} onBlur={(e => e.target.placeholder = "(HH:MM)")}/>
 
             <button onClick={this.formSubmitHandler} > Submit </button>
             </div>
@@ -315,7 +279,7 @@ export default class EventForm extends React.Component {
             <Modal.Header closeButton>
             <Modal.Title>Error</Modal.Title>
             </Modal.Header>
-            <Modal.Body>Please fill out all required fields</Modal.Body>
+            <Modal.Body>{this.state.showTimeError ? "Please enter a valid time" : "Please fill out all required fields"}</Modal.Body>
             <Modal.Footer>
             <Button variant="secondary" onClick={this.handleModalClose}>Close</Button>
             </Modal.Footer>

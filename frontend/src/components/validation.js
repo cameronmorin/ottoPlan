@@ -15,11 +15,12 @@ const validate = (value, rules) => {
     return isValid;
 }
 
+//check against empty input value
 const requiredValidator = value => {
     return (value.trim() !== '');
-    //return false;
 }
 
+//check time input is valid
 const timeValidator = value => {
     let re = new RegExp(/^([0-1]?[0-9]|2[0-4]):([0-5][0-9])(:[0-5][0-9])?$/);
 

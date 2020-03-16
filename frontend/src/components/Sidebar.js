@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import firebase from "firebase";
 import "../style/sidebar.css";
 
@@ -9,7 +9,6 @@ import Divider from "@material-ui/core/Divider";
 import ExpandMoreIcon from "@material-ui/icons/ExpandMore";
 import ExpandLessIcon from "@material-ui/icons/ExpandLess";
 import Collapse from "@material-ui/core/Collapse";
-// import ListItemText from "@material-ui/core/ListItemText";
 
 // Import Material Icons
 import HomeIcon from '@material-ui/icons/Home';
@@ -20,11 +19,6 @@ import SignoutIcon from '@material-ui/icons/ExitToApp';
 import EventIcon from '@material-ui/icons/Event';
 import NotifIcon from '@material-ui/icons/Notifications';
 import UnreadIcon from '@material-ui/icons/NotificationImportant';
-
-import { Modal } from 'react-bootstrap';
-
-import EventForm from './EventForm'
-
 
 var unread = false;
 const items = [
@@ -47,9 +41,6 @@ const items = [
 function SidebarItem({ depthStep = 10, depth = 0, expanded, item, ...rest }) {
   const [collapsed, setCollapsed] = React.useState(true);
   const { label, items, Icon, onClick: onClickProp } = item;
-  const [show, setShow] = useState(false);
-  const handleClose = () => setShow(false);
-  //const handleShow = () => setShow(true);
 
   function toggleClose() {
     setCollapsed(previous => !previous);
@@ -58,9 +49,6 @@ function SidebarItem({ depthStep = 10, depth = 0, expanded, item, ...rest }) {
   function onClick(e) {
     if (item.label === "Sign Out") {
       firebase.auth().signOut();
-    }
-    if (item.label === "Create Event"){
-      setShow(true);
     }
     if (Array.isArray(items)) {
       toggleClose();
@@ -82,12 +70,6 @@ function SidebarItem({ depthStep = 10, depth = 0, expanded, item, ...rest }) {
 
   return (
     <>
-      <Modal show={show} onHide={handleClose}>
-          <Modal.Header closeButton>
-            <Modal.Title>Create an Event</Modal.Title>
-          </Modal.Header>
-          <Modal.Body> <EventForm /> </Modal.Body>
-      </Modal>
       <ListItem
         className="sidebar-item"
         onClick={onClick}
