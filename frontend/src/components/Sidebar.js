@@ -56,7 +56,7 @@ function SidebarItem({ depthStep = 10, depth = 0, expanded, item, ...rest }) {
     if (onClickProp) {
       onClickProp(e, item);
     }
-  }
+  } 
 
   let expandedIcon;
 
